@@ -1,3 +1,10 @@
+This is the official repository, with added functionality for chmod in the S3 Streamwrapper.
+Chmod uses the same mapping scheme for the credentials as mkdir; 
+- 0700 is public-read, 
+- 0600 is authenticated read
+- the rest is private.
+usage is the same as normal chmod, (that was the point). 
+
 # AWS SDK for PHP - Version 3
 
 [![@awsforphp on Twitter](http://img.shields.io/badge/twitter-%40awsforphp-blue.svg?style=flat)](https://twitter.com/awsforphp)
