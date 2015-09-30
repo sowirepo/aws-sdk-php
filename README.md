@@ -1,7 +1,7 @@
 This is the official repository, with added functionality for chmod in the S3 Streamwrapper.
-Chmod uses the same mapping scheme for the credentials as mkdir; 
-- 0700 is public-read, 
-- 0600 is authenticated read
+Chmod uses the following mapping for unix filesystem modes to canned acl (different of mkdir):
+- 0xx4 and 0xx5 is public-read, 
+- 0xx6 and 0xx7 is public-read-write
 - the rest is private.
 usage is the same as normal chmod, (that was the point). 
 
