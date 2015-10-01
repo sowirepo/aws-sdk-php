@@ -368,7 +368,7 @@ class StreamWrapper
         }
 
         if (!isset($params['ACL'])) {
-            $params['ACL'] = $this->determineAcl($mode);
+            $params['ACL'] = $this->unixMode2Acl($mode);
         }
 
         return empty($params['Key'])
@@ -882,26 +882,6 @@ class StreamWrapper
         return $result['CommonPrefixes']
             ? $this->triggerError('Subfolder contains nested folders')
             : true;
-    }
-
-    /**
-     * Determine the most appropriate ACL based on a file mode.
-     *
-     * @param int $mode File mode
-     *
-     * @return string
-     */
-    private function determineAcl($mode)
-    {
-        switch (substr(decoct($mode), 2, 1)) {
-        case '7': 
-        case '6':
-            return 'public-read-write';
-        case '5': 
-        case '4': 
-            return 'public-read';
-        default: return 'private';
-        }
     }
 
     /**
