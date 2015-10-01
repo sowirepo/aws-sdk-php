@@ -1,9 +1,8 @@
-This is the official repository, with added functionality for chmod in the S3 Streamwrapper.
-Chmod uses the following mapping for unix filesystem modes to canned acl (different of mkdir):
+This is the official repository, with added functionality for chmod in the S3 Streamwrapper and improved acl mapping.
+The following scheme is used to map unix filesystem modes to canned acl:
 - 0xx4 and 0xx5 is public-read, 
 - 0xx6 and 0xx7 is public-read-write
 - the rest is private.
-usage is the same as normal chmod, (that was the point). 
 
 # AWS SDK for PHP - Version 3
 
