@@ -5,11 +5,12 @@
     "checksumFormat":"md5",
     "endpointPrefix":"s3",
     "globalEndpoint":"s3.amazonaws.com",
+    "protocol":"rest-xml",
     "serviceAbbreviation":"Amazon S3",
     "serviceFullName":"Amazon Simple Storage Service",
-    "signatureVersion":"v4",
+    "signatureVersion":"s3",
     "timestampFormat":"rfc822",
-    "protocol":"rest-xml"
+    "uid":"s3-2006-03-01"
   },
   "operations":{
     "AbortMultipartUpload":{
@@ -21,10 +22,7 @@
       "input":{"shape":"AbortMultipartUploadRequest"},
       "output":{"shape":"AbortMultipartUploadOutput"},
       "errors":[
-        {
-          "shape":"NoSuchUpload",
-          "exception":true
-        }
+        {"shape":"NoSuchUpload"}
       ],
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/mpUploadAbort.html"
     },
@@ -47,10 +45,7 @@
       "input":{"shape":"CopyObjectRequest"},
       "output":{"shape":"CopyObjectOutput"},
       "errors":[
-        {
-          "shape":"ObjectNotInActiveTierError",
-          "exception":true
-        }
+        {"shape":"ObjectNotInActiveTierError"}
       ],
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTObjectCOPY.html",
       "alias":"PutObjectCopy"
@@ -64,10 +59,8 @@
       "input":{"shape":"CreateBucketRequest"},
       "output":{"shape":"CreateBucketOutput"},
       "errors":[
-        {
-          "shape":"BucketAlreadyExists",
-          "exception":true
-        }
+        {"shape":"BucketAlreadyExists"},
+        {"shape":"BucketAlreadyOwnedByYou"}
       ],
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketPUT.html",
       "alias":"PutBucket"
@@ -92,6 +85,14 @@
       "input":{"shape":"DeleteBucketRequest"},
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketDELETE.html"
     },
+    "DeleteBucketAnalyticsConfiguration":{
+      "name":"DeleteBucketAnalyticsConfiguration",
+      "http":{
+        "method":"DELETE",
+        "requestUri":"/{Bucket}?analytics"
+      },
+      "input":{"shape":"DeleteBucketAnalyticsConfigurationRequest"}
+    },
     "DeleteBucketCors":{
       "name":"DeleteBucketCors",
       "http":{
@@ -101,6 +102,14 @@
       "input":{"shape":"DeleteBucketCorsRequest"},
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketDELETEcors.html"
     },
+    "DeleteBucketInventoryConfiguration":{
+      "name":"DeleteBucketInventoryConfiguration",
+      "http":{
+        "method":"DELETE",
+        "requestUri":"/{Bucket}?inventory"
+      },
+      "input":{"shape":"DeleteBucketInventoryConfigurationRequest"}
+    },
     "DeleteBucketLifecycle":{
       "name":"DeleteBucketLifecycle",
       "http":{
@@ -109,6 +118,14 @@
       },
       "input":{"shape":"DeleteBucketLifecycleRequest"},
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketDELETElifecycle.html"
+    },
+    "DeleteBucketMetricsConfiguration":{
+      "name":"DeleteBucketMetricsConfiguration",
+      "http":{
+        "method":"DELETE",
+        "requestUri":"/{Bucket}?metrics"
+      },
+      "input":{"shape":"DeleteBucketMetricsConfigurationRequest"}
     },
     "DeleteBucketPolicy":{
       "name":"DeleteBucketPolicy",
@@ -155,6 +172,15 @@
       "output":{"shape":"DeleteObjectOutput"},
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTObjectDELETE.html"
     },
+    "DeleteObjectTagging":{
+      "name":"DeleteObjectTagging",
+      "http":{
+        "method":"DELETE",
+        "requestUri":"/{Bucket}/{Key+}?tagging"
+      },
+      "input":{"shape":"DeleteObjectTaggingRequest"},
+      "output":{"shape":"DeleteObjectTaggingOutput"}
+    },
     "DeleteObjects":{
       "name":"DeleteObjects",
       "http":{
@@ -166,6 +192,15 @@
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/multiobjectdeleteapi.html",
       "alias":"DeleteMultipleObjects"
     },
+    "GetBucketAccelerateConfiguration":{
+      "name":"GetBucketAccelerateConfiguration",
+      "http":{
+        "method":"GET",
+        "requestUri":"/{Bucket}?accelerate"
+      },
+      "input":{"shape":"GetBucketAccelerateConfigurationRequest"},
+      "output":{"shape":"GetBucketAccelerateConfigurationOutput"}
+    },
     "GetBucketAcl":{
       "name":"GetBucketAcl",
       "http":{
@@ -175,6 +210,15 @@
       "input":{"shape":"GetBucketAclRequest"},
       "output":{"shape":"GetBucketAclOutput"},
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketGETacl.html"
+    },
+    "GetBucketAnalyticsConfiguration":{
+      "name":"GetBucketAnalyticsConfiguration",
+      "http":{
+        "method":"GET",
+        "requestUri":"/{Bucket}?analytics"
+      },
+      "input":{"shape":"GetBucketAnalyticsConfigurationRequest"},
+      "output":{"shape":"GetBucketAnalyticsConfigurationOutput"}
     },
     "GetBucketCors":{
       "name":"GetBucketCors",
@@ -186,6 +230,15 @@
       "output":{"shape":"GetBucketCorsOutput"},
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketGETcors.html"
     },
+    "GetBucketInventoryConfiguration":{
+      "name":"GetBucketInventoryConfiguration",
+      "http":{
+        "method":"GET",
+        "requestUri":"/{Bucket}?inventory"
+      },
+      "input":{"shape":"GetBucketInventoryConfigurationRequest"},
+      "output":{"shape":"GetBucketInventoryConfigurationOutput"}
+    },
     "GetBucketLifecycle":{
       "name":"GetBucketLifecycle",
       "http":{
@@ -194,8 +247,8 @@
       },
       "input":{"shape":"GetBucketLifecycleRequest"},
       "output":{"shape":"GetBucketLifecycleOutput"},
-      "deprecated":true,
-      "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketGETlifecycle.html"
+      "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketGETlifecycle.html",
+      "deprecated":true
     },
     "GetBucketLifecycleConfiguration":{
       "name":"GetBucketLifecycleConfiguration",
@@ -226,6 +279,15 @@
       "output":{"shape":"GetBucketLoggingOutput"},
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketGETlogging.html"
     },
+    "GetBucketMetricsConfiguration":{
+      "name":"GetBucketMetricsConfiguration",
+      "http":{
+        "method":"GET",
+        "requestUri":"/{Bucket}?metrics"
+      },
+      "input":{"shape":"GetBucketMetricsConfigurationRequest"},
+      "output":{"shape":"GetBucketMetricsConfigurationOutput"}
+    },
     "GetBucketNotification":{
       "name":"GetBucketNotification",
       "http":{
@@ -234,8 +296,8 @@
       },
       "input":{"shape":"GetBucketNotificationConfigurationRequest"},
       "output":{"shape":"NotificationConfigurationDeprecated"},
-      "deprecated":true,
-      "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketGETnotification.html"
+      "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketGETnotification.html",
+      "deprecated":true
     },
     "GetBucketNotificationConfiguration":{
       "name":"GetBucketNotificationConfiguration",
@@ -314,10 +376,7 @@
       "input":{"shape":"GetObjectRequest"},
       "output":{"shape":"GetObjectOutput"},
       "errors":[
-        {
-          "shape":"NoSuchKey",
-          "exception":true
-        }
+        {"shape":"NoSuchKey"}
       ],
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTObjectGET.html"
     },
@@ -330,12 +389,18 @@
       "input":{"shape":"GetObjectAclRequest"},
       "output":{"shape":"GetObjectAclOutput"},
       "errors":[
-        {
-          "shape":"NoSuchKey",
-          "exception":true
-        }
+        {"shape":"NoSuchKey"}
       ],
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTObjectGETacl.html"
+    },
+    "GetObjectTagging":{
+      "name":"GetObjectTagging",
+      "http":{
+        "method":"GET",
+        "requestUri":"/{Bucket}/{Key+}?tagging"
+      },
+      "input":{"shape":"GetObjectTaggingRequest"},
+      "output":{"shape":"GetObjectTaggingOutput"}
     },
     "GetObjectTorrent":{
       "name":"GetObjectTorrent",
@@ -355,10 +420,7 @@
       },
       "input":{"shape":"HeadBucketRequest"},
       "errors":[
-        {
-          "shape":"NoSuchBucket",
-          "exception":true
-        }
+        {"shape":"NoSuchBucket"}
       ],
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketHEAD.html"
     },
@@ -371,12 +433,36 @@
       "input":{"shape":"HeadObjectRequest"},
       "output":{"shape":"HeadObjectOutput"},
       "errors":[
-        {
-          "shape":"NoSuchKey",
-          "exception":true
-        }
+        {"shape":"NoSuchKey"}
       ],
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTObjectHEAD.html"
+    },
+    "ListBucketAnalyticsConfigurations":{
+      "name":"ListBucketAnalyticsConfigurations",
+      "http":{
+        "method":"GET",
+        "requestUri":"/{Bucket}?analytics"
+      },
+      "input":{"shape":"ListBucketAnalyticsConfigurationsRequest"},
+      "output":{"shape":"ListBucketAnalyticsConfigurationsOutput"}
+    },
+    "ListBucketInventoryConfigurations":{
+      "name":"ListBucketInventoryConfigurations",
+      "http":{
+        "method":"GET",
+        "requestUri":"/{Bucket}?inventory"
+      },
+      "input":{"shape":"ListBucketInventoryConfigurationsRequest"},
+      "output":{"shape":"ListBucketInventoryConfigurationsOutput"}
+    },
+    "ListBucketMetricsConfigurations":{
+      "name":"ListBucketMetricsConfigurations",
+      "http":{
+        "method":"GET",
+        "requestUri":"/{Bucket}?metrics"
+      },
+      "input":{"shape":"ListBucketMetricsConfigurationsRequest"},
+      "output":{"shape":"ListBucketMetricsConfigurationsOutput"}
     },
     "ListBuckets":{
       "name":"ListBuckets",
@@ -418,13 +504,22 @@
       "input":{"shape":"ListObjectsRequest"},
       "output":{"shape":"ListObjectsOutput"},
       "errors":[
-        {
-          "shape":"NoSuchBucket",
-          "exception":true
-        }
+        {"shape":"NoSuchBucket"}
       ],
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketGET.html",
       "alias":"GetBucket"
+    },
+    "ListObjectsV2":{
+      "name":"ListObjectsV2",
+      "http":{
+        "method":"GET",
+        "requestUri":"/{Bucket}?list-type=2"
+      },
+      "input":{"shape":"ListObjectsV2Request"},
+      "output":{"shape":"ListObjectsV2Output"},
+      "errors":[
+        {"shape":"NoSuchBucket"}
+      ]
     },
     "ListParts":{
       "name":"ListParts",
@@ -436,6 +531,14 @@
       "output":{"shape":"ListPartsOutput"},
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/mpUploadListParts.html"
     },
+    "PutBucketAccelerateConfiguration":{
+      "name":"PutBucketAccelerateConfiguration",
+      "http":{
+        "method":"PUT",
+        "requestUri":"/{Bucket}?accelerate"
+      },
+      "input":{"shape":"PutBucketAccelerateConfigurationRequest"}
+    },
     "PutBucketAcl":{
       "name":"PutBucketAcl",
       "http":{
@@ -444,6 +547,14 @@
       },
       "input":{"shape":"PutBucketAclRequest"},
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketPUTacl.html"
+    },
+    "PutBucketAnalyticsConfiguration":{
+      "name":"PutBucketAnalyticsConfiguration",
+      "http":{
+        "method":"PUT",
+        "requestUri":"/{Bucket}?analytics"
+      },
+      "input":{"shape":"PutBucketAnalyticsConfigurationRequest"}
     },
     "PutBucketCors":{
       "name":"PutBucketCors",
@@ -454,6 +565,14 @@
       "input":{"shape":"PutBucketCorsRequest"},
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketPUTcors.html"
     },
+    "PutBucketInventoryConfiguration":{
+      "name":"PutBucketInventoryConfiguration",
+      "http":{
+        "method":"PUT",
+        "requestUri":"/{Bucket}?inventory"
+      },
+      "input":{"shape":"PutBucketInventoryConfigurationRequest"}
+    },
     "PutBucketLifecycle":{
       "name":"PutBucketLifecycle",
       "http":{
@@ -461,8 +580,8 @@
         "requestUri":"/{Bucket}?lifecycle"
       },
       "input":{"shape":"PutBucketLifecycleRequest"},
-      "deprecated":true,
-      "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketPUTlifecycle.html"
+      "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketPUTlifecycle.html",
+      "deprecated":true
     },
     "PutBucketLifecycleConfiguration":{
       "name":"PutBucketLifecycleConfiguration",
@@ -481,6 +600,14 @@
       "input":{"shape":"PutBucketLoggingRequest"},
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketPUTlogging.html"
     },
+    "PutBucketMetricsConfiguration":{
+      "name":"PutBucketMetricsConfiguration",
+      "http":{
+        "method":"PUT",
+        "requestUri":"/{Bucket}?metrics"
+      },
+      "input":{"shape":"PutBucketMetricsConfigurationRequest"}
+    },
     "PutBucketNotification":{
       "name":"PutBucketNotification",
       "http":{
@@ -488,8 +615,8 @@
         "requestUri":"/{Bucket}?notification"
       },
       "input":{"shape":"PutBucketNotificationRequest"},
-      "deprecated":true,
-      "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketPUTnotification.html"
+      "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTBucketPUTnotification.html",
+      "deprecated":true
     },
     "PutBucketNotificationConfiguration":{
       "name":"PutBucketNotificationConfiguration",
@@ -571,12 +698,18 @@
       "input":{"shape":"PutObjectAclRequest"},
       "output":{"shape":"PutObjectAclOutput"},
       "errors":[
-        {
-          "shape":"NoSuchKey",
-          "exception":true
-        }
+        {"shape":"NoSuchKey"}
       ],
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTObjectPUTacl.html"
+    },
+    "PutObjectTagging":{
+      "name":"PutObjectTagging",
+      "http":{
+        "method":"PUT",
+        "requestUri":"/{Bucket}/{Key+}?tagging"
+      },
+      "input":{"shape":"PutObjectTaggingRequest"},
+      "output":{"shape":"PutObjectTaggingOutput"}
     },
     "RestoreObject":{
       "name":"RestoreObject",
@@ -587,10 +720,7 @@
       "input":{"shape":"RestoreObjectRequest"},
       "output":{"shape":"RestoreObjectOutput"},
       "errors":[
-        {
-          "shape":"ObjectAlreadyInActiveTierError",
-          "exception":true
-        }
+        {"shape":"ObjectAlreadyInActiveTierError"}
       ],
       "documentationUrl":"http://docs.amazonwebservices.com/AmazonS3/latest/API/RESTObjectRestore.html",
       "alias":"PostObjectRestore"
@@ -617,6 +747,13 @@
     }
   },
   "shapes":{
+    "AbortDate":{"type":"timestamp"},
+    "AbortIncompleteMultipartUpload":{
+      "type":"structure",
+      "members":{
+        "DaysAfterInitiation":{"shape":"DaysAfterInitiation"}
+      }
+    },
     "AbortMultipartUploadOutput":{
       "type":"structure",
       "members":{
@@ -657,6 +794,13 @@
         }
       }
     },
+    "AbortRuleId":{"type":"string"},
+    "AccelerateConfiguration":{
+      "type":"structure",
+      "members":{
+        "Status":{"shape":"BucketAccelerateStatus"}
+      }
+    },
     "AcceptRanges":{"type":"string"},
     "AccessControlPolicy":{
       "type":"structure",
@@ -668,6 +812,7 @@
         "Owner":{"shape":"Owner"}
       }
     },
+    "AccountId":{"type":"string"},
     "AllowedHeader":{"type":"string"},
     "AllowedHeaders":{
       "type":"list",
@@ -686,6 +831,67 @@
       "member":{"shape":"AllowedOrigin"},
       "flattened":true
     },
+    "AnalyticsAndOperator":{
+      "type":"structure",
+      "members":{
+        "Prefix":{"shape":"Prefix"},
+        "Tags":{
+          "shape":"TagSet",
+          "flattened":true,
+          "locationName":"Tag"
+        }
+      }
+    },
+    "AnalyticsConfiguration":{
+      "type":"structure",
+      "required":[
+        "Id",
+        "StorageClassAnalysis"
+      ],
+      "members":{
+        "Id":{"shape":"AnalyticsId"},
+        "Filter":{"shape":"AnalyticsFilter"},
+        "StorageClassAnalysis":{"shape":"StorageClassAnalysis"}
+      }
+    },
+    "AnalyticsConfigurationList":{
+      "type":"list",
+      "member":{"shape":"AnalyticsConfiguration"},
+      "flattened":true
+    },
+    "AnalyticsExportDestination":{
+      "type":"structure",
+      "required":["S3BucketDestination"],
+      "members":{
+        "S3BucketDestination":{"shape":"AnalyticsS3BucketDestination"}
+      }
+    },
+    "AnalyticsFilter":{
+      "type":"structure",
+      "members":{
+        "Prefix":{"shape":"Prefix"},
+        "Tag":{"shape":"Tag"},
+        "And":{"shape":"AnalyticsAndOperator"}
+      }
+    },
+    "AnalyticsId":{"type":"string"},
+    "AnalyticsS3BucketDestination":{
+      "type":"structure",
+      "required":[
+        "Format",
+        "Bucket"
+      ],
+      "members":{
+        "Format":{"shape":"AnalyticsS3ExportFileFormat"},
+        "BucketAccountId":{"shape":"AccountId"},
+        "Bucket":{"shape":"BucketName"},
+        "Prefix":{"shape":"Prefix"}
+      }
+    },
+    "AnalyticsS3ExportFileFormat":{
+      "type":"string",
+      "enum":["CSV"]
+    },
     "Body":{"type":"blob"},
     "Bucket":{
       "type":"structure",
@@ -694,7 +900,20 @@
         "CreationDate":{"shape":"CreationDate"}
       }
     },
+    "BucketAccelerateStatus":{
+      "type":"string",
+      "enum":[
+        "Enabled",
+        "Suspended"
+      ]
+    },
     "BucketAlreadyExists":{
+      "type":"structure",
+      "members":{
+      },
+      "exception":true
+    },
+    "BucketAlreadyOwnedByYou":{
       "type":"structure",
       "members":{
       },
@@ -726,6 +945,7 @@
         "eu-west-1",
         "us-west-1",
         "us-west-2",
+        "ap-south-1",
         "ap-southeast-1",
         "ap-southeast-2",
         "ap-northeast-1",
@@ -936,7 +1156,7 @@
     "ContentDisposition":{"type":"string"},
     "ContentEncoding":{"type":"string"},
     "ContentLanguage":{"type":"string"},
-    "ContentLength":{"type":"integer"},
+    "ContentLength":{"type":"long"},
     "ContentMD5":{"type":"string"},
     "ContentRange":{"type":"string"},
     "ContentType":{"type":"string"},
@@ -953,6 +1173,11 @@
           "shape":"CopySourceVersionId",
           "location":"header",
           "locationName":"x-amz-copy-source-version-id"
+        },
+        "VersionId":{
+          "shape":"ObjectVersionId",
+          "location":"header",
+          "locationName":"x-amz-version-id"
         },
         "ServerSideEncryption":{
           "shape":"ServerSideEncryption",
@@ -1090,6 +1315,11 @@
           "location":"header",
           "locationName":"x-amz-metadata-directive"
         },
+        "TaggingDirective":{
+          "shape":"TaggingDirective",
+          "location":"header",
+          "locationName":"x-amz-tagging-directive"
+        },
         "ServerSideEncryption":{
           "shape":"ServerSideEncryption",
           "location":"header",
@@ -1144,6 +1374,11 @@
           "shape":"RequestPayer",
           "location":"header",
           "locationName":"x-amz-request-payer"
+        },
+        "Tagging":{
+          "shape":"TaggingHeader",
+          "location":"header",
+          "locationName":"x-amz-tagging"
         }
       }
     },
@@ -1209,8 +1444,8 @@
         },
         "CreateBucketConfiguration":{
           "shape":"CreateBucketConfiguration",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"CreateBucketConfiguration"
+          "locationName":"CreateBucketConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         },
         "GrantFullControl":{
           "shape":"GrantFullControl",
@@ -1243,6 +1478,16 @@
     "CreateMultipartUploadOutput":{
       "type":"structure",
       "members":{
+        "AbortDate":{
+          "shape":"AbortDate",
+          "location":"header",
+          "locationName":"x-amz-abort-date"
+        },
+        "AbortRuleId":{
+          "shape":"AbortRuleId",
+          "location":"header",
+          "locationName":"x-amz-abort-rule-id"
+        },
         "Bucket":{
           "shape":"BucketName",
           "locationName":"Bucket"
@@ -1401,6 +1646,7 @@
       "timestampFormat":"iso8601"
     },
     "Days":{"type":"integer"},
+    "DaysAfterInitiation":{"type":"integer"},
     "Delete":{
       "type":"structure",
       "required":["Objects"],
@@ -1410,6 +1656,25 @@
           "locationName":"Object"
         },
         "Quiet":{"shape":"Quiet"}
+      }
+    },
+    "DeleteBucketAnalyticsConfigurationRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Id"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Id":{
+          "shape":"AnalyticsId",
+          "location":"querystring",
+          "locationName":"id"
+        }
       }
     },
     "DeleteBucketCorsRequest":{
@@ -1423,6 +1688,25 @@
         }
       }
     },
+    "DeleteBucketInventoryConfigurationRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Id"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Id":{
+          "shape":"InventoryId",
+          "location":"querystring",
+          "locationName":"id"
+        }
+      }
+    },
     "DeleteBucketLifecycleRequest":{
       "type":"structure",
       "required":["Bucket"],
@@ -1431,6 +1715,25 @@
           "shape":"BucketName",
           "location":"uri",
           "locationName":"Bucket"
+        }
+      }
+    },
+    "DeleteBucketMetricsConfigurationRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Id"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Id":{
+          "shape":"MetricsId",
+          "location":"querystring",
+          "locationName":"id"
         }
       }
     },
@@ -1560,6 +1863,40 @@
         }
       }
     },
+    "DeleteObjectTaggingOutput":{
+      "type":"structure",
+      "members":{
+        "VersionId":{
+          "shape":"ObjectVersionId",
+          "location":"header",
+          "locationName":"x-amz-version-id"
+        }
+      }
+    },
+    "DeleteObjectTaggingRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Key"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Key":{
+          "shape":"ObjectKey",
+          "location":"uri",
+          "locationName":"Key"
+        },
+        "VersionId":{
+          "shape":"ObjectVersionId",
+          "location":"querystring",
+          "locationName":"versionId"
+        }
+      }
+    },
     "DeleteObjectsOutput":{
       "type":"structure",
       "members":{
@@ -1589,8 +1926,8 @@
         },
         "Delete":{
           "shape":"Delete",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"Delete"
+          "locationName":"Delete",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         },
         "MFA":{
           "shape":"MFA",
@@ -1683,6 +2020,7 @@
         "Disabled"
       ]
     },
+    "ExpiredObjectDeleteMarker":{"type":"boolean"},
     "Expires":{"type":"timestamp"},
     "ExposeHeader":{"type":"string"},
     "ExposeHeaders":{
@@ -1690,6 +2028,7 @@
       "member":{"shape":"ExposeHeader"},
       "flattened":true
     },
+    "FetchOwner":{"type":"boolean"},
     "FilterRule":{
       "type":"structure",
       "members":{
@@ -1710,6 +2049,23 @@
       ]
     },
     "FilterRuleValue":{"type":"string"},
+    "GetBucketAccelerateConfigurationOutput":{
+      "type":"structure",
+      "members":{
+        "Status":{"shape":"BucketAccelerateStatus"}
+      }
+    },
+    "GetBucketAccelerateConfigurationRequest":{
+      "type":"structure",
+      "required":["Bucket"],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        }
+      }
+    },
     "GetBucketAclOutput":{
       "type":"structure",
       "members":{
@@ -1731,6 +2087,32 @@
         }
       }
     },
+    "GetBucketAnalyticsConfigurationOutput":{
+      "type":"structure",
+      "members":{
+        "AnalyticsConfiguration":{"shape":"AnalyticsConfiguration"}
+      },
+      "payload":"AnalyticsConfiguration"
+    },
+    "GetBucketAnalyticsConfigurationRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Id"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Id":{
+          "shape":"AnalyticsId",
+          "location":"querystring",
+          "locationName":"id"
+        }
+      }
+    },
     "GetBucketCorsOutput":{
       "type":"structure",
       "members":{
@@ -1748,6 +2130,32 @@
           "shape":"BucketName",
           "location":"uri",
           "locationName":"Bucket"
+        }
+      }
+    },
+    "GetBucketInventoryConfigurationOutput":{
+      "type":"structure",
+      "members":{
+        "InventoryConfiguration":{"shape":"InventoryConfiguration"}
+      },
+      "payload":"InventoryConfiguration"
+    },
+    "GetBucketInventoryConfigurationRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Id"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Id":{
+          "shape":"InventoryId",
+          "location":"querystring",
+          "locationName":"id"
         }
       }
     },
@@ -1822,6 +2230,32 @@
           "shape":"BucketName",
           "location":"uri",
           "locationName":"Bucket"
+        }
+      }
+    },
+    "GetBucketMetricsConfigurationOutput":{
+      "type":"structure",
+      "members":{
+        "MetricsConfiguration":{"shape":"MetricsConfiguration"}
+      },
+      "payload":"MetricsConfiguration"
+    },
+    "GetBucketMetricsConfigurationRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Id"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Id":{
+          "shape":"MetricsId",
+          "location":"querystring",
+          "locationName":"id"
         }
       }
     },
@@ -2123,6 +2557,16 @@
           "shape":"ReplicationStatus",
           "location":"header",
           "locationName":"x-amz-replication-status"
+        },
+        "PartsCount":{
+          "shape":"PartsCount",
+          "location":"header",
+          "locationName":"x-amz-mp-parts-count"
+        },
+        "TagCount":{
+          "shape":"TagCount",
+          "location":"header",
+          "locationName":"x-amz-tagging-count"
         }
       },
       "payload":"Body"
@@ -2223,6 +2667,47 @@
           "shape":"RequestPayer",
           "location":"header",
           "locationName":"x-amz-request-payer"
+        },
+        "PartNumber":{
+          "shape":"PartNumber",
+          "location":"querystring",
+          "locationName":"partNumber"
+        }
+      }
+    },
+    "GetObjectTaggingOutput":{
+      "type":"structure",
+      "required":["TagSet"],
+      "members":{
+        "VersionId":{
+          "shape":"ObjectVersionId",
+          "location":"header",
+          "locationName":"x-amz-version-id"
+        },
+        "TagSet":{"shape":"TagSet"}
+      }
+    },
+    "GetObjectTaggingRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Key"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Key":{
+          "shape":"ObjectKey",
+          "location":"uri",
+          "locationName":"Key"
+        },
+        "VersionId":{
+          "shape":"ObjectVersionId",
+          "location":"querystring",
+          "locationName":"versionId"
         }
       }
     },
@@ -2265,6 +2750,13 @@
         }
       }
     },
+    "GlacierJobParameters":{
+      "type":"structure",
+      "required":["Tier"],
+      "members":{
+        "Tier":{"shape":"Tier"}
+      }
+    },
     "Grant":{
       "type":"structure",
       "members":{
@@ -2286,8 +2778,8 @@
         "ID":{"shape":"ID"},
         "Type":{
           "shape":"Type",
-          "xmlAttribute":true,
-          "locationName":"xsi:type"
+          "locationName":"xsi:type",
+          "xmlAttribute":true
         },
         "URI":{"shape":"URI"}
       },
@@ -2436,6 +2928,11 @@
           "shape":"ReplicationStatus",
           "location":"header",
           "locationName":"x-amz-replication-status"
+        },
+        "PartsCount":{
+          "shape":"PartsCount",
+          "location":"header",
+          "locationName":"x-amz-mp-parts-count"
         }
       }
     },
@@ -2505,6 +3002,11 @@
           "shape":"RequestPayer",
           "location":"header",
           "locationName":"x-amz-request-payer"
+        },
+        "PartNumber":{
+          "shape":"PartNumber",
+          "location":"querystring",
+          "locationName":"partNumber"
         }
       }
     },
@@ -2531,8 +3033,105 @@
         "DisplayName":{"shape":"DisplayName"}
       }
     },
+    "InventoryConfiguration":{
+      "type":"structure",
+      "required":[
+        "Destination",
+        "IsEnabled",
+        "Id",
+        "IncludedObjectVersions",
+        "Schedule"
+      ],
+      "members":{
+        "Destination":{"shape":"InventoryDestination"},
+        "IsEnabled":{"shape":"IsEnabled"},
+        "Filter":{"shape":"InventoryFilter"},
+        "Id":{"shape":"InventoryId"},
+        "IncludedObjectVersions":{"shape":"InventoryIncludedObjectVersions"},
+        "OptionalFields":{"shape":"InventoryOptionalFields"},
+        "Schedule":{"shape":"InventorySchedule"}
+      }
+    },
+    "InventoryConfigurationList":{
+      "type":"list",
+      "member":{"shape":"InventoryConfiguration"},
+      "flattened":true
+    },
+    "InventoryDestination":{
+      "type":"structure",
+      "required":["S3BucketDestination"],
+      "members":{
+        "S3BucketDestination":{"shape":"InventoryS3BucketDestination"}
+      }
+    },
+    "InventoryFilter":{
+      "type":"structure",
+      "required":["Prefix"],
+      "members":{
+        "Prefix":{"shape":"Prefix"}
+      }
+    },
+    "InventoryFormat":{
+      "type":"string",
+      "enum":["CSV"]
+    },
+    "InventoryFrequency":{
+      "type":"string",
+      "enum":[
+        "Daily",
+        "Weekly"
+      ]
+    },
+    "InventoryId":{"type":"string"},
+    "InventoryIncludedObjectVersions":{
+      "type":"string",
+      "enum":[
+        "All",
+        "Current"
+      ]
+    },
+    "InventoryOptionalField":{
+      "type":"string",
+      "enum":[
+        "Size",
+        "LastModifiedDate",
+        "StorageClass",
+        "ETag",
+        "IsMultipartUploaded",
+        "ReplicationStatus"
+      ]
+    },
+    "InventoryOptionalFields":{
+      "type":"list",
+      "member":{
+        "shape":"InventoryOptionalField",
+        "locationName":"Field"
+      }
+    },
+    "InventoryS3BucketDestination":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Format"
+      ],
+      "members":{
+        "AccountId":{"shape":"AccountId"},
+        "Bucket":{"shape":"BucketName"},
+        "Format":{"shape":"InventoryFormat"},
+        "Prefix":{"shape":"Prefix"}
+      }
+    },
+    "InventorySchedule":{
+      "type":"structure",
+      "required":["Frequency"],
+      "members":{
+        "Frequency":{"shape":"InventoryFrequency"}
+      }
+    },
+    "IsEnabled":{"type":"boolean"},
     "IsLatest":{"type":"boolean"},
     "IsTruncated":{"type":"boolean"},
+    "KeyCount":{"type":"integer"},
     "KeyMarker":{"type":"string"},
     "KeyPrefixEquals":{"type":"string"},
     "LambdaFunctionArn":{"type":"string"},
@@ -2575,19 +3174,21 @@
       "type":"structure",
       "members":{
         "Date":{"shape":"Date"},
-        "Days":{"shape":"Days"}
+        "Days":{"shape":"Days"},
+        "ExpiredObjectDeleteMarker":{"shape":"ExpiredObjectDeleteMarker"}
       }
     },
     "LifecycleRule":{
       "type":"structure",
-      "required":[
-        "Prefix",
-        "Status"
-      ],
+      "required":["Status"],
       "members":{
         "Expiration":{"shape":"LifecycleExpiration"},
         "ID":{"shape":"ID"},
-        "Prefix":{"shape":"Prefix"},
+        "Prefix":{
+          "shape":"Prefix",
+          "deprecated":true
+        },
+        "Filter":{"shape":"LifecycleRuleFilter"},
         "Status":{"shape":"ExpirationStatus"},
         "Transitions":{
           "shape":"TransitionList",
@@ -2597,13 +3198,117 @@
           "shape":"NoncurrentVersionTransitionList",
           "locationName":"NoncurrentVersionTransition"
         },
-        "NoncurrentVersionExpiration":{"shape":"NoncurrentVersionExpiration"}
+        "NoncurrentVersionExpiration":{"shape":"NoncurrentVersionExpiration"},
+        "AbortIncompleteMultipartUpload":{"shape":"AbortIncompleteMultipartUpload"}
+      }
+    },
+    "LifecycleRuleAndOperator":{
+      "type":"structure",
+      "members":{
+        "Prefix":{"shape":"Prefix"},
+        "Tags":{
+          "shape":"TagSet",
+          "flattened":true,
+          "locationName":"Tag"
+        }
+      }
+    },
+    "LifecycleRuleFilter":{
+      "type":"structure",
+      "members":{
+        "Prefix":{"shape":"Prefix"},
+        "Tag":{"shape":"Tag"},
+        "And":{"shape":"LifecycleRuleAndOperator"}
       }
     },
     "LifecycleRules":{
       "type":"list",
       "member":{"shape":"LifecycleRule"},
       "flattened":true
+    },
+    "ListBucketAnalyticsConfigurationsOutput":{
+      "type":"structure",
+      "members":{
+        "IsTruncated":{"shape":"IsTruncated"},
+        "ContinuationToken":{"shape":"Token"},
+        "NextContinuationToken":{"shape":"NextToken"},
+        "AnalyticsConfigurationList":{
+          "shape":"AnalyticsConfigurationList",
+          "locationName":"AnalyticsConfiguration"
+        }
+      }
+    },
+    "ListBucketAnalyticsConfigurationsRequest":{
+      "type":"structure",
+      "required":["Bucket"],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "ContinuationToken":{
+          "shape":"Token",
+          "location":"querystring",
+          "locationName":"continuation-token"
+        }
+      }
+    },
+    "ListBucketInventoryConfigurationsOutput":{
+      "type":"structure",
+      "members":{
+        "ContinuationToken":{"shape":"Token"},
+        "InventoryConfigurationList":{
+          "shape":"InventoryConfigurationList",
+          "locationName":"InventoryConfiguration"
+        },
+        "IsTruncated":{"shape":"IsTruncated"},
+        "NextContinuationToken":{"shape":"NextToken"}
+      }
+    },
+    "ListBucketInventoryConfigurationsRequest":{
+      "type":"structure",
+      "required":["Bucket"],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "ContinuationToken":{
+          "shape":"Token",
+          "location":"querystring",
+          "locationName":"continuation-token"
+        }
+      }
+    },
+    "ListBucketMetricsConfigurationsOutput":{
+      "type":"structure",
+      "members":{
+        "IsTruncated":{"shape":"IsTruncated"},
+        "ContinuationToken":{"shape":"Token"},
+        "NextContinuationToken":{"shape":"NextToken"},
+        "MetricsConfigurationList":{
+          "shape":"MetricsConfigurationList",
+          "locationName":"MetricsConfiguration"
+        }
+      }
+    },
+    "ListBucketMetricsConfigurationsRequest":{
+      "type":"structure",
+      "required":["Bucket"],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "ContinuationToken":{
+          "shape":"Token",
+          "location":"querystring",
+          "locationName":"continuation-token"
+        }
+      }
     },
     "ListBucketsOutput":{
       "type":"structure",
@@ -2786,12 +3491,95 @@
           "shape":"Prefix",
           "location":"querystring",
           "locationName":"prefix"
+        },
+        "RequestPayer":{
+          "shape":"RequestPayer",
+          "location":"header",
+          "locationName":"x-amz-request-payer"
+        }
+      }
+    },
+    "ListObjectsV2Output":{
+      "type":"structure",
+      "members":{
+        "IsTruncated":{"shape":"IsTruncated"},
+        "Contents":{"shape":"ObjectList"},
+        "Name":{"shape":"BucketName"},
+        "Prefix":{"shape":"Prefix"},
+        "Delimiter":{"shape":"Delimiter"},
+        "MaxKeys":{"shape":"MaxKeys"},
+        "CommonPrefixes":{"shape":"CommonPrefixList"},
+        "EncodingType":{"shape":"EncodingType"},
+        "KeyCount":{"shape":"KeyCount"},
+        "ContinuationToken":{"shape":"Token"},
+        "NextContinuationToken":{"shape":"NextToken"},
+        "StartAfter":{"shape":"StartAfter"}
+      }
+    },
+    "ListObjectsV2Request":{
+      "type":"structure",
+      "required":["Bucket"],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Delimiter":{
+          "shape":"Delimiter",
+          "location":"querystring",
+          "locationName":"delimiter"
+        },
+        "EncodingType":{
+          "shape":"EncodingType",
+          "location":"querystring",
+          "locationName":"encoding-type"
+        },
+        "MaxKeys":{
+          "shape":"MaxKeys",
+          "location":"querystring",
+          "locationName":"max-keys"
+        },
+        "Prefix":{
+          "shape":"Prefix",
+          "location":"querystring",
+          "locationName":"prefix"
+        },
+        "ContinuationToken":{
+          "shape":"Token",
+          "location":"querystring",
+          "locationName":"continuation-token"
+        },
+        "FetchOwner":{
+          "shape":"FetchOwner",
+          "location":"querystring",
+          "locationName":"fetch-owner"
+        },
+        "StartAfter":{
+          "shape":"StartAfter",
+          "location":"querystring",
+          "locationName":"start-after"
+        },
+        "RequestPayer":{
+          "shape":"RequestPayer",
+          "location":"header",
+          "locationName":"x-amz-request-payer"
         }
       }
     },
     "ListPartsOutput":{
       "type":"structure",
       "members":{
+        "AbortDate":{
+          "shape":"AbortDate",
+          "location":"header",
+          "locationName":"x-amz-abort-date"
+        },
+        "AbortRuleId":{
+          "shape":"AbortRuleId",
+          "location":"header",
+          "locationName":"x-amz-abort-rule-id"
+        },
         "Bucket":{"shape":"BucketName"},
         "Key":{"shape":"ObjectKey"},
         "UploadId":{"shape":"MultipartUploadId"},
@@ -2897,6 +3685,39 @@
     },
     "MetadataKey":{"type":"string"},
     "MetadataValue":{"type":"string"},
+    "MetricsAndOperator":{
+      "type":"structure",
+      "members":{
+        "Prefix":{"shape":"Prefix"},
+        "Tags":{
+          "shape":"TagSet",
+          "flattened":true,
+          "locationName":"Tag"
+        }
+      }
+    },
+    "MetricsConfiguration":{
+      "type":"structure",
+      "required":["Id"],
+      "members":{
+        "Id":{"shape":"MetricsId"},
+        "Filter":{"shape":"MetricsFilter"}
+      }
+    },
+    "MetricsConfigurationList":{
+      "type":"list",
+      "member":{"shape":"MetricsConfiguration"},
+      "flattened":true
+    },
+    "MetricsFilter":{
+      "type":"structure",
+      "members":{
+        "Prefix":{"shape":"Prefix"},
+        "Tag":{"shape":"Tag"},
+        "And":{"shape":"MetricsAndOperator"}
+      }
+    },
+    "MetricsId":{"type":"string"},
     "MissingMeta":{"type":"integer"},
     "MultipartUpload":{
       "type":"structure",
@@ -2918,6 +3739,7 @@
     "NextKeyMarker":{"type":"string"},
     "NextMarker":{"type":"string"},
     "NextPartNumberMarker":{"type":"integer"},
+    "NextToken":{"type":"string"},
     "NextUploadIdMarker":{"type":"string"},
     "NextVersionIdMarker":{"type":"string"},
     "NoSuchBucket":{
@@ -3015,6 +3837,7 @@
         "public-read",
         "public-read-write",
         "authenticated-read",
+        "aws-exec-read",
         "bucket-owner-read",
         "bucket-owner-full-control"
       ]
@@ -3101,6 +3924,7 @@
       "member":{"shape":"Part"},
       "flattened":true
     },
+    "PartsCount":{"type":"integer"},
     "Payer":{
       "type":"string",
       "enum":[
@@ -3127,6 +3951,26 @@
         "https"
       ]
     },
+    "PutBucketAccelerateConfigurationRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "AccelerateConfiguration"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "AccelerateConfiguration":{
+          "shape":"AccelerateConfiguration",
+          "locationName":"AccelerateConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
+        }
+      },
+      "payload":"AccelerateConfiguration"
+    },
     "PutBucketAclRequest":{
       "type":"structure",
       "required":["Bucket"],
@@ -3138,8 +3982,8 @@
         },
         "AccessControlPolicy":{
           "shape":"AccessControlPolicy",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"AccessControlPolicy"
+          "locationName":"AccessControlPolicy",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         },
         "Bucket":{
           "shape":"BucketName",
@@ -3179,6 +4023,32 @@
       },
       "payload":"AccessControlPolicy"
     },
+    "PutBucketAnalyticsConfigurationRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Id",
+        "AnalyticsConfiguration"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Id":{
+          "shape":"AnalyticsId",
+          "location":"querystring",
+          "locationName":"id"
+        },
+        "AnalyticsConfiguration":{
+          "shape":"AnalyticsConfiguration",
+          "locationName":"AnalyticsConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
+        }
+      },
+      "payload":"AnalyticsConfiguration"
+    },
     "PutBucketCorsRequest":{
       "type":"structure",
       "required":[
@@ -3193,8 +4063,8 @@
         },
         "CORSConfiguration":{
           "shape":"CORSConfiguration",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"CORSConfiguration"
+          "locationName":"CORSConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         },
         "ContentMD5":{
           "shape":"ContentMD5",
@@ -3203,6 +4073,32 @@
         }
       },
       "payload":"CORSConfiguration"
+    },
+    "PutBucketInventoryConfigurationRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Id",
+        "InventoryConfiguration"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Id":{
+          "shape":"InventoryId",
+          "location":"querystring",
+          "locationName":"id"
+        },
+        "InventoryConfiguration":{
+          "shape":"InventoryConfiguration",
+          "locationName":"InventoryConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
+        }
+      },
+      "payload":"InventoryConfiguration"
     },
     "PutBucketLifecycleConfigurationRequest":{
       "type":"structure",
@@ -3215,8 +4111,8 @@
         },
         "LifecycleConfiguration":{
           "shape":"BucketLifecycleConfiguration",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"LifecycleConfiguration"
+          "locationName":"LifecycleConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         }
       },
       "payload":"LifecycleConfiguration"
@@ -3237,8 +4133,8 @@
         },
         "LifecycleConfiguration":{
           "shape":"LifecycleConfiguration",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"LifecycleConfiguration"
+          "locationName":"LifecycleConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         }
       },
       "payload":"LifecycleConfiguration"
@@ -3257,8 +4153,8 @@
         },
         "BucketLoggingStatus":{
           "shape":"BucketLoggingStatus",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"BucketLoggingStatus"
+          "locationName":"BucketLoggingStatus",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         },
         "ContentMD5":{
           "shape":"ContentMD5",
@@ -3267,6 +4163,32 @@
         }
       },
       "payload":"BucketLoggingStatus"
+    },
+    "PutBucketMetricsConfigurationRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Id",
+        "MetricsConfiguration"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Id":{
+          "shape":"MetricsId",
+          "location":"querystring",
+          "locationName":"id"
+        },
+        "MetricsConfiguration":{
+          "shape":"MetricsConfiguration",
+          "locationName":"MetricsConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
+        }
+      },
+      "payload":"MetricsConfiguration"
     },
     "PutBucketNotificationConfigurationRequest":{
       "type":"structure",
@@ -3282,8 +4204,8 @@
         },
         "NotificationConfiguration":{
           "shape":"NotificationConfiguration",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"NotificationConfiguration"
+          "locationName":"NotificationConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         }
       },
       "payload":"NotificationConfiguration"
@@ -3307,8 +4229,8 @@
         },
         "NotificationConfiguration":{
           "shape":"NotificationConfigurationDeprecated",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"NotificationConfiguration"
+          "locationName":"NotificationConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         }
       },
       "payload":"NotificationConfiguration"
@@ -3353,8 +4275,8 @@
         },
         "ReplicationConfiguration":{
           "shape":"ReplicationConfiguration",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"ReplicationConfiguration"
+          "locationName":"ReplicationConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         }
       },
       "payload":"ReplicationConfiguration"
@@ -3378,8 +4300,8 @@
         },
         "RequestPaymentConfiguration":{
           "shape":"RequestPaymentConfiguration",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"RequestPaymentConfiguration"
+          "locationName":"RequestPaymentConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         }
       },
       "payload":"RequestPaymentConfiguration"
@@ -3403,8 +4325,8 @@
         },
         "Tagging":{
           "shape":"Tagging",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"Tagging"
+          "locationName":"Tagging",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         }
       },
       "payload":"Tagging"
@@ -3433,8 +4355,8 @@
         },
         "VersioningConfiguration":{
           "shape":"VersioningConfiguration",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"VersioningConfiguration"
+          "locationName":"VersioningConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         }
       },
       "payload":"VersioningConfiguration"
@@ -3458,8 +4380,8 @@
         },
         "WebsiteConfiguration":{
           "shape":"WebsiteConfiguration",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"WebsiteConfiguration"
+          "locationName":"WebsiteConfiguration",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         }
       },
       "payload":"WebsiteConfiguration"
@@ -3488,8 +4410,8 @@
         },
         "AccessControlPolicy":{
           "shape":"AccessControlPolicy",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"AccessControlPolicy"
+          "locationName":"AccessControlPolicy",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         },
         "Bucket":{
           "shape":"BucketName",
@@ -3535,6 +4457,11 @@
           "shape":"RequestPayer",
           "location":"header",
           "locationName":"x-amz-request-payer"
+        },
+        "VersionId":{
+          "shape":"ObjectVersionId",
+          "location":"querystring",
+          "locationName":"versionId"
         }
       },
       "payload":"AccessControlPolicy"
@@ -3714,9 +4641,60 @@
           "shape":"RequestPayer",
           "location":"header",
           "locationName":"x-amz-request-payer"
+        },
+        "Tagging":{
+          "shape":"TaggingHeader",
+          "location":"header",
+          "locationName":"x-amz-tagging"
         }
       },
       "payload":"Body"
+    },
+    "PutObjectTaggingOutput":{
+      "type":"structure",
+      "members":{
+        "VersionId":{
+          "shape":"ObjectVersionId",
+          "location":"header",
+          "locationName":"x-amz-version-id"
+        }
+      }
+    },
+    "PutObjectTaggingRequest":{
+      "type":"structure",
+      "required":[
+        "Bucket",
+        "Key",
+        "Tagging"
+      ],
+      "members":{
+        "Bucket":{
+          "shape":"BucketName",
+          "location":"uri",
+          "locationName":"Bucket"
+        },
+        "Key":{
+          "shape":"ObjectKey",
+          "location":"uri",
+          "locationName":"Key"
+        },
+        "VersionId":{
+          "shape":"ObjectVersionId",
+          "location":"querystring",
+          "locationName":"versionId"
+        },
+        "ContentMD5":{
+          "shape":"ContentMD5",
+          "location":"header",
+          "locationName":"Content-MD5"
+        },
+        "Tagging":{
+          "shape":"Tagging",
+          "locationName":"Tagging",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
+        }
+      },
+      "payload":"Tagging"
     },
     "QueueArn":{"type":"string"},
     "QueueConfiguration":{
@@ -3885,8 +4863,8 @@
         },
         "RestoreRequest":{
           "shape":"RestoreRequest",
-          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"},
-          "locationName":"RestoreRequest"
+          "locationName":"RestoreRequest",
+          "xmlNamespace":{"uri":"http://s3.amazonaws.com/doc/2006-03-01/"}
         },
         "RequestPayer":{
           "shape":"RequestPayer",
@@ -3900,7 +4878,8 @@
       "type":"structure",
       "required":["Days"],
       "members":{
-        "Days":{"shape":"Days"}
+        "Days":{"shape":"Days"},
+        "GlacierJobParameters":{"shape":"GlacierJobParameters"}
       }
     },
     "Role":{"type":"string"},
@@ -3932,7 +4911,8 @@
         "Status":{"shape":"ExpirationStatus"},
         "Transition":{"shape":"Transition"},
         "NoncurrentVersionTransition":{"shape":"NoncurrentVersionTransition"},
-        "NoncurrentVersionExpiration":{"shape":"NoncurrentVersionExpiration"}
+        "NoncurrentVersionExpiration":{"shape":"NoncurrentVersionExpiration"},
+        "AbortIncompleteMultipartUpload":{"shape":"AbortIncompleteMultipartUpload"}
       }
     },
     "Rules":{
@@ -3967,6 +4947,7 @@
       ]
     },
     "Size":{"type":"integer"},
+    "StartAfter":{"type":"string"},
     "StorageClass":{
       "type":"string",
       "enum":[
@@ -3974,6 +4955,27 @@
         "REDUCED_REDUNDANCY",
         "STANDARD_IA"
       ]
+    },
+    "StorageClassAnalysis":{
+      "type":"structure",
+      "members":{
+        "DataExport":{"shape":"StorageClassAnalysisDataExport"}
+      }
+    },
+    "StorageClassAnalysisDataExport":{
+      "type":"structure",
+      "required":[
+        "OutputSchemaVersion",
+        "Destination"
+      ],
+      "members":{
+        "OutputSchemaVersion":{"shape":"StorageClassAnalysisSchemaVersion"},
+        "Destination":{"shape":"AnalyticsExportDestination"}
+      }
+    },
+    "StorageClassAnalysisSchemaVersion":{
+      "type":"string",
+      "enum":["V_1"]
     },
     "Suffix":{"type":"string"},
     "Tag":{
@@ -3987,6 +4989,7 @@
         "Value":{"shape":"Value"}
       }
     },
+    "TagCount":{"type":"integer"},
     "TagSet":{
       "type":"list",
       "member":{
@@ -4001,6 +5004,14 @@
         "TagSet":{"shape":"TagSet"}
       }
     },
+    "TaggingDirective":{
+      "type":"string",
+      "enum":[
+        "COPY",
+        "REPLACE"
+      ]
+    },
+    "TaggingHeader":{"type":"string"},
     "TargetBucket":{"type":"string"},
     "TargetGrant":{
       "type":"structure",
@@ -4017,6 +5028,15 @@
       }
     },
     "TargetPrefix":{"type":"string"},
+    "Tier":{
+      "type":"string",
+      "enum":[
+        "Standard",
+        "Bulk",
+        "Expedited"
+      ]
+    },
+    "Token":{"type":"string"},
     "TopicArn":{"type":"string"},
     "TopicConfiguration":{
       "type":"structure",

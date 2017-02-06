@@ -44,14 +44,30 @@ coverage:
 coverage-show:
 	open build/artifacts/coverage/index.html
 
+# Ensures that the MODELSDIR variable was passed to the make command
+check-models-dir:
+	$(if $(MODELSDIR),,$(error MODELSDIR is not defined. Pass via "make tag MODELSDIR=../models"))
+
+sync-models: check-models-dir
+	rsync -chavPL $(MODELSDIR) src/data --exclude="*/*/service-2.json" \
+	--exclude="*/*/resources-1.json" --exclude=".idea/" --exclude="*.iml" \
+	--exclude="sdb/" --exclude="lambda/2014-11-11/" --exclude=".git/" \
+	--exclude="*.md"
+
+	rsync -chavPL src/data/iot-data/ src/data/data.iot/
+	rm -rf src/data/iot-data
+
+	rsync -chavPL src/data/meteringmarketplace/ src/data/metering.marketplace/
+	rm -rf src/data/meteringmarketplace
+
 integ:
-	vendor/bin/phpunit --debug --testsuite=integ $(TEST)
+	vendor/bin/behat --format=progress --tags=integ
 
 smoke:
-	vendor/bin/behat --format=progress
+	vendor/bin/behat --format=progress --tags=smoke
 
 # Packages the phar and zip
-package: compile-json
+package:
 	php build/packager.php $(SERVICE)
 
 guide:
@@ -71,10 +87,15 @@ api: api-get-apigen
 	rm -rf build/artifacts/docs
 	php build/artifacts/apigen.phar generate --config build/docs/apigen.neon --debug
 	make api-models
+	make redirect-map
 
 api-models:
 	# Build custom docs
 	php build/docs.php
+
+redirect-map:
+	# Build redirect map
+	php build/build-redirect-map.php
 
 api-show:
 	open build/artifacts/docs/index.html
@@ -93,12 +114,15 @@ compile-json:
 	git diff --name-only | grep ^src/data/.*\.json\.php$ || true
 
 annotate-clients: clean
-	php build/annotate-clients.php --tag=latest
+	php build/annotate-clients.php --all
 
 annotate-client-locator: clean
 	php build/annotate-client-locator.php
 
-build: compile-json annotate-clients annotate-client-locator package
+build-manifest:
+	php build/build-manifest.php >/dev/null
+
+build: | build-manifest compile-json annotate-clients annotate-client-locator
 
 # Ensures that the TAG variable was passed to the make command
 check-tag:
@@ -112,7 +136,7 @@ check-tag:
 tag: check-tag
 	@echo Tagging $(TAG)
 	chag update $(TAG)
-	sed -i '' -e "s/VERSION = '.*'/VERSION = '$(TAG)'/" src/Sdk.php
+	sed -i'' -e "s/VERSION = '.*'/VERSION = '$(TAG)'/" src/Sdk.php
 	php -l src/Sdk.php
 	git commit -a -m '$(TAG) release'
 	chag tag
@@ -136,4 +160,6 @@ full_release: tag release
 
 .PHONY: help clean test coverage coverage-show integ package compile-json \
 guide guide-show api-get-apigen api api-show api-package api-manifest \
-check-tag tag release full-release clear-cache
+check-tag tag release full-release clear-cache test-phar integ smoke \
+api-models compile-json annotate-clients annotate-client-locator \
+build-manifest check-models-dir sync-models

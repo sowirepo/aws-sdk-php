@@ -23,19 +23,6 @@ class SmokeContext extends PHPUnit_Framework_Assert implements
 {
     use IntegUtils;
 
-    protected static $configOverrides = [
-        'DeviceFarm' => [
-            'region' => 'us-west-2',
-        ],
-        'Efs' => [
-            'profile' => 'shared-integ',
-            'region' => 'us-west-2',
-        ],
-        'Support' => [
-            'profile' => 'shared-integ',
-        ],
-    ];
-
     /**
      * @var Sdk
      */
@@ -61,6 +48,22 @@ class SmokeContext extends PHPUnit_Framework_Assert implements
      */
     protected $error;
 
+    private static $cloudFrontOriginAccessId;
+
+    private static $cloudFrontETag;
+
+    private static $configOverrides = [
+        'DeviceFarm' => [
+            'region' => 'us-west-2',
+        ],
+        'Efs' => [
+            'region' => 'us-west-2',
+        ],
+        'Inspector' => [
+            'region' => 'us-west-2',
+        ],
+    ];
+
     /**
      * @BeforeSuite
      */
@@ -71,6 +74,43 @@ class SmokeContext extends PHPUnit_Framework_Assert implements
 
         // Clear out any previously compiled JMESPath files.
         Env::cleanCompileDir();
+    }
+
+    /**
+     * @BeforeFeature @cloudfront
+     *
+     * @param BeforeFeatureScope $scope
+     */
+    public static function setUpCloudFront(BeforeFeatureScope $scope)
+    {
+        /** @var \Aws\Result $result */
+        $result = self::getSdk(self::$configOverrides)
+            ->createCloudFront()
+            ->createCloudFrontOriginAccessIdentity([
+                'CloudFrontOriginAccessIdentityConfig' => [
+                    'CallerReference' => rand(0, PHP_INT_MAX),
+                    'Comment' => 'Foo Bar, Baz!',
+                ],
+            ]);
+
+        self::$cloudFrontOriginAccessId = $result
+            ->search('CloudFrontOriginAccessIdentity.Id');
+        self::$cloudFrontETag = $result['ETag'];
+    }
+
+    /**
+     * @AfterFeature @cloudfront
+     *
+     * @param AfterFeatureScope $scope
+     */
+    public static function tearDownCloudFront(AfterFeatureScope $scope)
+    {
+        self::getSdk(self::$configOverrides)
+            ->createCloudFront()
+            ->deleteCloudFrontOriginAccessIdentity([
+                'Id' => self::$cloudFrontOriginAccessId,
+                'IfMatch' => self::$cloudFrontETag,
+            ]);
     }
 
     /**
@@ -92,6 +132,62 @@ class SmokeContext extends PHPUnit_Framework_Assert implements
             // throw the exception to cause the feature to be skipped.
             if ($e instanceof AwsException
                 && 'AccessDeniedException' === $e->getAwsErrorCode()
+            ) {
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * @BeforeFeature @inspector
+     *
+     * Ensure that the testing credentials have access to the Inspector preview;
+     * skip entire feature otherwise.
+     *
+     * @param BeforeFeatureScope $scope
+     */
+    public static function setUpInspector(BeforeFeatureScope $scope)
+    {
+        try {
+            self::getSdk(self::$configOverrides)
+                ->createInspector()
+                ->listApplications();
+        } catch (\Exception $e) {
+            // If the test failed because the account has no access to EFS,
+            // throw the exception to cause the feature to be skipped.
+            if ($e instanceof AwsException
+                && 'AccessDeniedException' === $e->getAwsErrorCode()
+            ) {
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * @BeforeFeature @marketplacecommerceanalytics
+     *
+     * Ensure that the testing credentials have a Marketplace Commerce Analytics
+     * subscription; skip entire feature otherwise.
+     *
+     * @param BeforeFeatureScope $scope
+     */
+    public static function setUpMarketplaceCommerceAnalytics(BeforeFeatureScope $scope)
+    {
+        try {
+            self::getSdk(self::$configOverrides)
+                ->createMarketplaceCommerceAnalytics()
+                ->generateDataSet([
+                    'dataSetType' => 'fake-type',
+                    'dataSetPublicationDate' => 'fake-date',
+                    'roleNameArn' => 'fake-arn',
+                    'destinationS3BucketName' => 'fake-bucket',
+                    'snsTopicArn' => 'fake-arn',
+                ]);
+        } catch (\Exception $e) {
+            // If the test failed because the account has no support subscription,
+            // throw the exception to cause the feature to be skipped.
+            if ($e instanceof AwsException
+                && 'SubscriptionRequiredException' === $e->getAwsErrorCode()
             ) {
                 throw $e;
             }
@@ -308,7 +404,7 @@ class SmokeContext extends PHPUnit_Framework_Assert implements
      */
     public function theRequestShouldBeSuccessful()
     {
-        throw new PendingException();
+        $this->assertEmpty($this->error);
     }
 
     /**

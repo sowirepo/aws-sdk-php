@@ -88,7 +88,7 @@ of a bucket), you could do the following.
     ]);
 
     $expression = '[CommonPrefixes[].Prefix, Contents[].Key][]';
-    foreach ($paginator->search($expression) as $item) {
+    foreach ($results->search($expression) as $item) {
         echo $item . "\n";
     }
 
@@ -132,7 +132,7 @@ downstream promises.
     $promise = $results->each(function ($result) use ($s3Client) {
         if (substr($result['Key'], -3) === 'Foo') {
             // Merge this promise into the iterator.
-            return $client->deleteAsync([
+            return $s3Client->deleteAsync([
                 'Bucket' => 'my-bucket',
                 'Key'    => 'Foo'
             ]);

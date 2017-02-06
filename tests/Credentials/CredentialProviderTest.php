@@ -4,8 +4,8 @@ namespace Aws\Test\Credentials;
 use Aws\Credentials\CredentialProvider;
 use Aws\Credentials\Credentials;
 use Aws\LruArrayCache;
+use Aws\Sts\StsClient;
 use GuzzleHttp\Promise;
-
 /**
  * @covers \Aws\Credentials\CredentialProvider
  */
@@ -133,22 +133,51 @@ class CredentialProviderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('abc', $creds->getAccessKeyId());
     }
 
-    public function testCreatesFromIniFile()
+    /**
+     * @dataProvider iniFileProvider
+     *
+     * @param string $iniFile
+     * @param Credentials $expectedCreds
+     */
+    public function testCreatesFromIniFile($iniFile, Credentials $expectedCreds)
     {
         $dir = $this->clearEnv();
-        $ini = <<<EOT
+        file_put_contents($dir . '/credentials', $iniFile);
+        putenv('HOME=' . dirname($dir));
+        $creds = call_user_func(CredentialProvider::ini('default'))
+            ->wait();
+        $this->assertEquals($expectedCreds->toArray(), $creds->toArray());
+        unlink($dir . '/credentials');
+    }
+
+    public function iniFileProvider()
+    {
+        $credentials = new Credentials('foo', 'bar', 'baz');
+        $standardIni = <<<EOT
 [default]
 aws_access_key_id = foo
-aws_secret_access_key = baz
-aws_security_token = tok
+aws_secret_access_key = bar
+aws_session_token = baz
 EOT;
-        file_put_contents($dir . '/credentials', $ini);
-        putenv('HOME=' . dirname($dir));
-        $creds = call_user_func(CredentialProvider::ini())->wait();
-        $this->assertEquals('foo', $creds->getAccessKeyId());
-        $this->assertEquals('baz', $creds->getSecretKey());
-        $this->assertEquals('tok', $creds->getSecurityToken());
-        unlink($dir . '/credentials');
+        $oldIni = <<<EOT
+[default]
+aws_access_key_id = foo
+aws_secret_access_key = bar
+aws_security_token = baz
+EOT;
+        $mixedIni = <<<EOT
+[default]
+aws_access_key_id = foo
+aws_secret_access_key = bar
+aws_session_token = baz
+aws_security_token = fizz
+EOT;
+
+        return [
+            [$standardIni, $credentials],
+            [$oldIni, $credentials],
+            [$mixedIni, $credentials],
+        ];
     }
 
     /**
@@ -200,7 +229,7 @@ EOT;
 
     /**
      * @expectedException \Aws\Exception\CredentialsException
-     * @expectedExceptionMessage 'foo' not found in credentials file
+     * @expectedExceptionMessage 'foo' not found in
      */
     public function testEnsuresFileIsNotEmpty()
     {
@@ -220,6 +249,22 @@ EOT;
     {
         $p = CredentialProvider::instanceProfile();
         $this->assertInstanceOf('Aws\Credentials\InstanceProfileProvider', $p);
+    }
+
+    public function testCreatesFromEcsCredentialProvider()
+    {
+        $p = CredentialProvider::ecsCredentials();
+        $this->assertInstanceOf('Aws\Credentials\EcsCredentialProvider', $p);
+    }
+
+    public function testCreatesFromAssumeRoleCredentialProvider()
+    {
+        $config = [
+            'client' => new StsClient(['region' => 'foo', 'version' => 'latest']),
+            'assume_role_params' => [ 'foo' => 'bar' ]
+        ];
+        $p = CredentialProvider::assumeRole($config);
+        $this->assertInstanceOf('Aws\Credentials\AssumeRoleCredentialProvider', $p);
     }
 
     public function testGetsHomeDirectoryForWindowsUsers()
@@ -264,20 +309,29 @@ EOT;
 
     public function testCachesAsPartOfDefaultChain()
     {
+        $instanceCredential = new Credentials('instance_foo', 'instance_bar', 'instance_baz', PHP_INT_MAX);
+        $ecsCredential = new Credentials('ecs_foo', 'ecs_bar', 'ecs_baz', PHP_INT_MAX);
+
         $cache = new LruArrayCache;
-        $cache->set('aws_cached_credentials', new Credentials(
-            'foo',
-            'bar'
-        ));
+        $cache->set('aws_cached_instance_credentials', $instanceCredential);
+        $cache->set('aws_cached_ecs_credentials', $ecsCredential);
+
         $this->clearEnv();
         putenv('HOME=/does/not/exist');
         $credentials = call_user_func(CredentialProvider::defaultProvider([
             'credentials' => $cache,
         ]))
             ->wait();
+        $this->assertEquals($instanceCredential->getAccessKeyId(), $credentials->getAccessKeyId());
+        $this->assertEquals($instanceCredential->getSecretKey(), $credentials->getSecretKey());
 
-        $this->assertEquals('foo', $credentials->getAccessKeyId());
-        $this->assertEquals('bar', $credentials->getSecretKey());
+        putenv('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI=/latest');
+        $credentials = call_user_func(CredentialProvider::defaultProvider([
+            'credentials' => $cache,
+        ]))
+            ->wait();
+        $this->assertEquals($ecsCredential->getAccessKeyId(), $credentials->getAccessKeyId());
+        $this->assertEquals($ecsCredential->getSecretKey(), $credentials->getSecretKey());
     }
 
     public function testChainsCredentials()

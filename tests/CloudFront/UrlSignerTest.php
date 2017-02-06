@@ -53,6 +53,36 @@ class UrlSignerTest extends \PHPUnit_Framework_TestCase
         $this->assertNotContains('+', $signature);
     }
 
+    public function testCreatesUrlSignersWithSpecialCharacters()
+    {
+        /** @var $client \Aws\CloudFront\CloudFrontClient */
+        $client = CloudFrontClient::factory([
+            'region'  => 'us-west-2',
+            'version' => 'latest'
+        ]);
+        $ts = time() + 1000;
+        $key = $_SERVER['CF_PRIVATE_KEY'];
+        $kp = $_SERVER['CF_KEY_PAIR_ID'];
+
+        $invalidUri = 'http://abc.cloudfront.net/images/éüàçµñåœŒ.jpg?query key=query value';
+        $uri = new Uri($invalidUri);
+        $this->assertNotEquals($invalidUri, (string) $uri);
+
+        $url = $client->getSignedUrl([
+            'url'         => $invalidUri,
+            'expires'     => $ts,
+            'private_key' => $key,
+            'key_pair_id' => $kp
+        ]);
+
+        $this->assertContains("Key-Pair-Id={$kp}", $url);
+        $this->assertContains((string) $uri, $url);
+        $this->assertStringStartsWith(
+            "{$uri}&Expires={$ts}&Signature=",
+            $url
+        );
+    }
+
     public function testCreatesUrlSignersWithCustomPolicy()
     {
         /** @var $client \Aws\CloudFront\CloudFrontClient */
@@ -89,37 +119,6 @@ class UrlSignerTest extends \PHPUnit_Framework_TestCase
         $this->assertContains("Key-Pair-Id={$kp}", $url);
     }
 
-    public function testCreatesCannedUrlSignersForRtmpWhileStrippingFileExtension()
-    {
-        $s = new UrlSigner('a', $_SERVER['CF_PRIVATE_KEY']);
-        $m = new \ReflectionMethod($s, 'createCannedPolicy');
-        $m->setAccessible(true);
-        $ts = time() + 1000;
-        // Try with no leading path
-        $result = $m->invoke($s, 'rtmp', 'rtmp://foo.cloudfront.net/test.mp4', $ts);
-        $this->assertEquals(
-            '{"Statement":[{"Resource":"test.mp4","Condition":{"DateLessThan":{"AWS:EpochTime":' . $ts . '}}}]}',
-            $result
-        );
-        $this->assertInternalType('array', json_decode($result, true));
-        // Try with nested path
-        $result = $m->invoke($s, 'rtmp', 'rtmp://foo.cloudfront.net/videos/test.mp4', $ts);
-        $this->assertEquals(
-            '{"Statement":[{"Resource":"videos/test.mp4","Condition":{"DateLessThan":{"AWS:EpochTime":' . $ts . '}}}]}',
-            $result
-        );
-    }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage An expires option is required when using a canned policy
-     */
-    public function testEnsuresExpiresIsSetWhenUsingCannedPolicy()
-    {
-        $s = new UrlSigner('a', $_SERVER['CF_PRIVATE_KEY']);
-        $s->getSignedUrl('http://foo/bar');
-    }
-
     /**
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Invalid URI scheme
@@ -141,12 +140,28 @@ class UrlSignerTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage PK file not found
+     * @dataProvider urlAndResourceProvider
+     *
+     * @param string $url
+     * @param string $resource
      */
-    public function testEnsuresPkFileExists()
+    public function testIsolatesResourceIUrls($url, $resource)
     {
-        $s = new UrlSigner('a', 'b');
-        $s->getSignedUrl('http://bar.com');
+        $s = new UrlSigner('a', $_SERVER['CF_PRIVATE_KEY']);
+        $m = new \ReflectionMethod(get_class($s), 'createResource');
+        $m->setAccessible(true);
+
+        $scheme = parse_url($url)['scheme'];
+        $this->assertSame($resource, $m->invoke($s, $scheme, $url));
+    }
+
+    public function urlAndResourceProvider()
+    {
+        return [
+            ['rtmp://foo.cloudfront.net/videos/test.mp4', 'videos/test.mp4'],
+            ['rtmp://foo.cloudfront.net/test.mp4', 'test.mp4'],
+            array_fill(0, 2, 'https://aws.amazon.com/something.html'),
+            array_fill(0, 2, 'http://www.foo.com/bar/baz.quux'),
+        ];
     }
 }

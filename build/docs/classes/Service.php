@@ -60,12 +60,13 @@ class Service
 
     public function __construct(Api $api, DocModel $docs)
     {
-        $this->name = $api->getEndpointPrefix();
+        $this->name = $api->getServiceName();
         $this->api = $api;
         $this->namespace = $this->getServiceNamespace($this->name);
         $this->version = $api->getApiVersion();
         $this->docs = $docs;
         $this->slug = $this->name . '-' . $this->version;
+        $this->uid = $api->getUid();
         $this->clientName = $this->namespace . 'Client';
         $this->client = 'Aws\\' . $this->namespace . '\\' . $this->clientName;
         $this->clientLink = 'class-Aws.' . $this->namespace . '.' . $this->namespace . 'Client.html';

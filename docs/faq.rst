@@ -70,8 +70,7 @@ Because PHP's integer type is signed and many platforms use 32-bit integers, the
 AWS SDK for PHP does not correctly handle files larger than 2GB on a 32-bit
 stack (where "stack" includes CPU, OS, web server, and PHP binary). This is a
 `well-known PHP issue <http://www.google.com/search?q=php+2gb+32-bit>`_. In the
-case of Microsoft® Windows®, there are no official builds of PHP that support
-64-bit integers.
+case of Microsoft® Windows®, only builds of PHP 7 support 64-bit integers.
 
 The recommended solution is to use a `64-bit Linux stack <http://aws.amazon.com/amazon-linux-ami/>`_,
 such as the 64-bit Amazon Linux AMI with the latest version of PHP installed.
@@ -108,6 +107,17 @@ middleware to the ``Aws\HandlerList`` of an ``Aws\CommandInterface`` or
 
 See :ref:`map-request` for more information.
 
+
+How can I sign an arbitrary request?
+------------------------------------
+
+You can sign an arbitrary `PSR-7 request
+<https://docs.aws.amazon.com/aws-sdk-php/v3/api/class-Psr.Http.Message.RequestInterface.html>`_
+using the SDK's `SignatureV4 class
+<https://docs.aws.amazon.com/aws-sdk-php/v3/api/class-Aws.Signature.SignatureV4.html>`_.
+
+See :doc:`service/cloudsearch-custom-requests` for a full example of how to do
+so.
 
 How can I modify a command before sending it?
 ---------------------------------------------
@@ -150,7 +160,7 @@ Does the SDK work on HHVM?
 --------------------------
 
 The SDK does not currently run on HHVM, and won't be able to until the
-`issue with the yield syntax in HHVM <https://github.com/facebook/hhvm/issues/1627>`_
+`issue with the yield semantics in HHVM <https://github.com/facebook/hhvm/issues/6807>`_
 is resolved.
 
 
@@ -180,22 +190,99 @@ for a list of regions, endpoints, and the supported schemes.
     the network.
 
 
-How do I fix an error related to "aws-cache"?
----------------------------------------------
+What do I do about a "Parse error"?
+-----------------------------------
 
-We received a few reports from users who run into an error like the following::
+The PHP engine will throw parsing errors when it encounters syntax it does not
+understand. This is almost always encountered when attempting to run code that
+was written for a different version of PHP.
 
-    ErrorException: {...}/vendor/aws/aws-sdk-php/src/JsonCompiler.php line 93
-    file_put_contents(/tmp/aws-cache/data_manifest.json.php): failed to open stream: Permission denied
+If you encounter a parsing error, please check your system and make sure it
+fulfills the SDK's :doc:`/getting-started/requirements`.
 
-The SDK uses caching to improve the performance of loading the service
-descriptions. To aid in that process, it writes out data to a directory called
-"aws-cache" within your system's tmp directory. If that is not accessible, then
-you will get an error like the one shown above.
 
-There are two ways to avoid this problem.
+Why is the S3 client decompressing gzipped files?
+-------------------------------------------------
 
-1. Change the permissions of the directory to allow your application to write
-   the cache files.
-2. Configure the SDK to use a different directory by setting the
-   ``AWS_PHP_CACHE_DIR`` environment variable.
+Some HTTP handlers -- including the default Guzzle 6 HTTP handler -- will
+inflate compressed response bodies by default. This behavior can be overridden
+by setting the :ref:`http_decode_content` HTTP option to ``false``. For
+backwards compatibility reasons, this default cannot be changed, but it is
+recommended that you disable content decoding at the S3 client level.
+
+See :ref:`http_decode_content` for an example of how to disable automatic
+content decoding.
+
+
+How do I disable body signing in S3?
+------------------------------------
+
+You can disable body signing by setting the ``ContentSHA256`` parameter in
+command object to ``Aws\Signature\S3SignatureV4::UNSIGNED_PAYLOAD``. Then PHP SDK will use it as
+the 'x-amz-content-sha-256' header and the body checksum in the canonical request.
+
+.. code-block:: php
+
+    $s3Client = new Aws\S3\S3Client([
+        'version' => '2006-03-01',
+        'region'  => 'us-standard'
+    ]);
+
+    $params = [
+        'Bucket' => 'foo',
+        'Key'    => 'baz',
+        'ContentSHA256' => Aws\Signature\S3SignatureV4::UNSIGNED_PAYLOAD
+    ];
+
+    // Using operation methods creates command implicitly.
+    $result = $s3Client->putObject($params);
+
+    // Using commands explicitly.
+    $command = $s3Client->getCommand('PutObject', $params);
+    $result = $s3Client->execute($command);
+
+How is retry scheme handled in PHP SDK?
+---------------------------------------
+
+PHP SDK has a ``RetryMiddleware`` that handles retry behavior. In terms of 5xx HTTP
+status codes for server errors, SDK retries on 500, 502, 503 and 504.
+
+Throttling exceptions including ``RequestLimitExceeded``, ``Throttling``,
+``ProvisionedThroughputExceededException``, ``ThrottlingException``, ``RequestThrottled``
+and ``BandwidthLimitExceeded`` are handled with retries as well.
+
+SDK also integrates exponential delay with backoff and jitter algorithm in retry scheme. Furthermore,
+default retry behavior is configured as ``3`` for all services except dynamoDB, which is ``10``.
+
+How to handle exception with Error code?
+----------------------------------------
+
+Besides SDK customized Exception classes, each Aws Service Client has its own exception class that
+inherits from `Aws\Exception\AwsException <http://docs.aws.amazon.com/aws-sdk-php/v3/api/class-Aws.Exception.AwsException.html>`_.
+You can determine more specific error types to catch with the API specific errors listed under the
+``Errors`` section of each method.
+
+Error Code information is available with `getAwsErrorCode() <http://docs.aws.amazon.com/aws-sdk-php/v3/api/class-Aws.Exception.AwsException.html#_getAwsErrorCode>`_
+from ``Aws\Exception\AwsException``.
+
+.. code-block:: php
+
+    $sns = new \Aws\Sns\SnsClient([
+        'region' => 'us-west-2',
+        'version' => 'latest',
+    ]);
+
+    try {
+        $sns->publish([
+            // parameters
+            ...
+        ]);
+        // do something
+    } catch (SnsException $e) {
+        switch ($e->getAwsErrorCode()) {
+            case 'EndpointDisabled':
+            case 'NotFound':
+                // do something
+                break;
+        }
+    }

@@ -108,11 +108,10 @@ changes until you are ready to explicitly update your configuration.
 
 .. important::
 
-    When using Amazon S3, and unlike in previous versions of the SDK, you must
-    provide a region when instantiating an ``S3Client``. This client will only
-    be able to operate on buckets that were created in the region you've
-    specified. If you are not sure what region your S3 bucket is in, you can
-    use the ``getBucketLocation`` operation to find out.
+    The SDK also includes multi-region clients, which can dispatch requests to
+    different regions based on a parameter (``@region``) supplied as a command
+    parameter. The region used by default by these clients is specified with the
+    ``region`` option supplied to the client constructor.
 
 
 Client instantiation uses the constructor
@@ -411,8 +410,11 @@ even been removed.
 * Removed:
     * DynamoDB ``Item``, ``Attribute``, and ``ItemIterator`` classes - These
       were previously deprecated in `Version 2.7.0 <https://github.com/aws/aws-sdk-php/blob/v3/CHANGELOG.md#270---2014-10-08>`_.
-    * SNS Message Validator - This will exist in a separate, light-weight
-      project that will not require the SDK as a dependency.
+    * SNS Message Validator - This is now `a separate, light-weight project
+      <https://github.com/aws/aws-php-sns-message-validator>`_ that does not
+      require the SDK as a dependency. This project is, however, included in the
+      Phar and Zip distributions of the SDK. A getting started guide can be
+      found `on the AWS PHP Development blog <https://blogs.aws.amazon.com/php/post/Tx15276Q7B4NUO0/Receiving-Amazon-SNS-Messages-in-PHP>`_.
     * S3 ``AcpBuilder`` and related objects were removed.
 
 

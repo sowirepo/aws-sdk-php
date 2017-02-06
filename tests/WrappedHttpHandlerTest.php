@@ -2,6 +2,8 @@
 namespace Aws\Test;
 
 use Aws\Api\ErrorParser\JsonRpcErrorParser;
+use Aws\Api\ErrorParser\RestJsonErrorParser;
+use Aws\Api\ErrorParser\XmlErrorParser;
 use Aws\Command;
 use Aws\CommandInterface;
 use Aws\Exception\AwsException;
@@ -45,9 +47,10 @@ class WrappedHttpHandlerTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('GuzzleHttp\Promise\PromiseInterface', $promise);
         $this->assertSame($result, $promise->wait());
         $this->assertEquals([
-            'statusCode'   => 200,
-            'effectiveUri' => (string) $req->getUri(),
-            'headers'      => ['foo' => 'Bar']
+            'statusCode'    => 200,
+            'effectiveUri'  => (string) $req->getUri(),
+            'headers'       => ['foo' => 'Bar'],
+            'transferStats' => [],
         ], $result['@metadata']);
     }
 
@@ -86,18 +89,28 @@ class WrappedHttpHandlerTest extends \PHPUnit_Framework_TestCase
         }
     }
 
-    public function testCanRejectWithAndParseResponse()
+    /**
+     * @dataProvider responseAndParserProvider
+     *
+     * @param Response $res
+     * @param $errorParser
+     * @param $expectedCode
+     * @param $expectedId
+     */
+    public function testCanRejectWithAndParseResponse(
+        Response $res,
+        $errorParser,
+        $expectedCode,
+        $expectedId
+    )
     {
         $e = new \Exception('a');
         $cmd = new Command('foo');
-        $bd = json_encode(['__type' => 'foo#bar']);
-        $res = new Response(400, ['X-Amzn-RequestId' => '123'], $bd);
         $req = new Request('GET', 'http://foo.com');
         $handler = function () use ($e, $req, $res) {
             return new RejectedPromise(['exception' => $e, 'response' => $res]);
         };
         $parser = [$this, 'fail'];
-        $errorParser = new JsonRpcErrorParser();
         $wrapped = new WrappedHttpHandler($handler, $parser, $errorParser);
 
         try {
@@ -108,10 +121,58 @@ class WrappedHttpHandlerTest extends \PHPUnit_Framework_TestCase
             $this->assertSame($res, $e->getResponse());
             $this->assertSame($req, $e->getRequest());
             $this->assertNull($e->getResult());
-            $this->assertEquals('bar', $e->getAwsErrorCode());
-            $this->assertEquals('client', $e->getAwsErrorType());
-            $this->assertEquals('123', $e->getAwsRequestId());
+            $this->assertEquals($expectedCode, $e->getAwsErrorCode());
+            $this->assertEquals($expectedId, $e->getAwsRequestId());
         }
+    }
+
+    public function responseAndParserProvider()
+    {
+        return [
+            [
+                new Response(
+                    400,
+                    ['X-Amzn-RequestId' => '123'],
+                    json_encode(['__type' => 'foo#bar'])
+                ),
+                new JsonRpcErrorParser(),
+                'bar',
+                '123',
+            ],
+            [
+                new Response(
+                    400,
+                    [
+                        'X-Amzn-RequestId' => '123',
+                        'X-Amzn-ErrorType' => 'foo:bar'
+                    ],
+                    json_encode(['message' => 'sorry!'])
+                ),
+                new RestJsonErrorParser(),
+                'foo',
+                '123',
+            ],
+            [
+                new Response(
+                    400,
+                    [],
+                    '<?xml version="1.0" encoding="UTF-8"?><Error><Code>InternalError</Code><RequestId>656c76696e6727732072657175657374</RequestId></Error>'
+                ),
+                new XmlErrorParser(),
+                'InternalError',
+                '656c76696e6727732072657175657374',
+            ],
+            [
+                new Response(
+                    400,
+                    ['X-Amzn-RequestId' => '123'],
+                    openssl_random_pseudo_bytes(1024)
+                ),
+                new XmlErrorParser(),
+                null,
+                null,
+            ],
+        ];
     }
 
     public function testCanRejectWithException()
@@ -130,5 +191,39 @@ class WrappedHttpHandlerTest extends \PHPUnit_Framework_TestCase
         } catch (\Exception $e2) {
             $this->assertSame($e, $e2);
         }
+    }
+
+    public function testDoesNotPassOnTransferStatsCallbackToHandlerByDefault()
+    {
+        $handler = function ($request, array $options) {
+            $this->assertArrayNotHasKey('http_stats_receiver', $options);
+            return new Response;
+        };
+        $parser = function () { return new Result; };
+        $wrapped = new WrappedHttpHandler($handler, $parser, [$this, 'fail']);
+
+        $wrapped(new Command('a'), new Request('GET', 'http://foo.com'))
+            ->wait();
+    }
+
+    public function testPassesOnTransferStatsCallbackToHandlerWhenRequested()
+    {
+        $handler = function ($request, array $options) {
+            $this->assertArrayHasKey('http_stats_receiver', $options);
+            $this->assertTrue(is_callable($options['http_stats_receiver']));
+            return new Response;
+        };
+
+        $parser = function () { return new Result; };
+        $wrapped = new WrappedHttpHandler(
+            $handler,
+            $parser,
+            [$this, 'fail'],
+            AwsException::class,
+            $collectStats = true
+        );
+
+        $wrapped(new Command('a'), new Request('GET', 'http://foo.com'))
+            ->wait();
     }
 }

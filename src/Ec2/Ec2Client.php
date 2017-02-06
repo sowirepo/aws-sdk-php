@@ -5,7 +5,8 @@ use Aws\AwsClient;
 use Aws\Api\Service;
 use Aws\Api\DocModel;
 use Aws\Api\ApiProvider;
-
+use Aws\IdempotencyTokenMiddleware;
+use Aws\PresignUrlMiddleware;
 /**
  * Client used to interact with Amazon EC2.
  *
@@ -13,6 +14,8 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise acceptVpcPeeringConnectionAsync(array $args = [])
  * @method \Aws\Result allocateAddress(array $args = [])
  * @method \GuzzleHttp\Promise\Promise allocateAddressAsync(array $args = [])
+ * @method \Aws\Result allocateHosts(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise allocateHostsAsync(array $args = [])
  * @method \Aws\Result assignPrivateIpAddresses(array $args = [])
  * @method \GuzzleHttp\Promise\Promise assignPrivateIpAddressesAsync(array $args = [])
  * @method \Aws\Result associateAddress(array $args = [])
@@ -71,6 +74,8 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise createInternetGatewayAsync(array $args = [])
  * @method \Aws\Result createKeyPair(array $args = [])
  * @method \GuzzleHttp\Promise\Promise createKeyPairAsync(array $args = [])
+ * @method \Aws\Result createNatGateway(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise createNatGatewayAsync(array $args = [])
  * @method \Aws\Result createNetworkAcl(array $args = [])
  * @method \GuzzleHttp\Promise\Promise createNetworkAclAsync(array $args = [])
  * @method \Aws\Result createNetworkAclEntry(array $args = [])
@@ -119,6 +124,8 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise deleteInternetGatewayAsync(array $args = [])
  * @method \Aws\Result deleteKeyPair(array $args = [])
  * @method \GuzzleHttp\Promise\Promise deleteKeyPairAsync(array $args = [])
+ * @method \Aws\Result deleteNatGateway(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise deleteNatGatewayAsync(array $args = [])
  * @method \Aws\Result deleteNetworkAcl(array $args = [])
  * @method \GuzzleHttp\Promise\Promise deleteNetworkAclAsync(array $args = [])
  * @method \Aws\Result deleteNetworkAclEntry(array $args = [])
@@ -177,6 +184,10 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise describeExportTasksAsync(array $args = [])
  * @method \Aws\Result describeFlowLogs(array $args = [])
  * @method \GuzzleHttp\Promise\Promise describeFlowLogsAsync(array $args = [])
+ * @method \Aws\Result describeHosts(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise describeHostsAsync(array $args = [])
+ * @method \Aws\Result describeIdFormat(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise describeIdFormatAsync(array $args = [])
  * @method \Aws\Result describeImageAttribute(array $args = [])
  * @method \GuzzleHttp\Promise\Promise describeImageAttributeAsync(array $args = [])
  * @method \Aws\Result describeImages(array $args = [])
@@ -197,6 +208,8 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise describeKeyPairsAsync(array $args = [])
  * @method \Aws\Result describeMovingAddresses(array $args = [])
  * @method \GuzzleHttp\Promise\Promise describeMovingAddressesAsync(array $args = [])
+ * @method \Aws\Result describeNatGateways(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise describeNatGatewaysAsync(array $args = [])
  * @method \Aws\Result describeNetworkAcls(array $args = [])
  * @method \GuzzleHttp\Promise\Promise describeNetworkAclsAsync(array $args = [])
  * @method \Aws\Result describeNetworkInterfaceAttribute(array $args = [])
@@ -219,6 +232,12 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise describeReservedInstancesOfferingsAsync(array $args = [])
  * @method \Aws\Result describeRouteTables(array $args = [])
  * @method \GuzzleHttp\Promise\Promise describeRouteTablesAsync(array $args = [])
+ * @method \Aws\Result describeScheduledInstanceAvailability(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise describeScheduledInstanceAvailabilityAsync(array $args = [])
+ * @method \Aws\Result describeScheduledInstances(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise describeScheduledInstancesAsync(array $args = [])
+ * @method \Aws\Result describeSecurityGroupReferences(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise describeSecurityGroupReferencesAsync(array $args = [])
  * @method \Aws\Result describeSecurityGroups(array $args = [])
  * @method \GuzzleHttp\Promise\Promise describeSecurityGroupsAsync(array $args = [])
  * @method \Aws\Result describeSnapshotAttribute(array $args = [])
@@ -237,6 +256,8 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise describeSpotInstanceRequestsAsync(array $args = [])
  * @method \Aws\Result describeSpotPriceHistory(array $args = [])
  * @method \GuzzleHttp\Promise\Promise describeSpotPriceHistoryAsync(array $args = [])
+ * @method \Aws\Result describeStaleSecurityGroups(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise describeStaleSecurityGroupsAsync(array $args = [])
  * @method \Aws\Result describeSubnets(array $args = [])
  * @method \GuzzleHttp\Promise\Promise describeSubnetsAsync(array $args = [])
  * @method \Aws\Result describeTags(array $args = [])
@@ -251,6 +272,8 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise describeVpcAttributeAsync(array $args = [])
  * @method \Aws\Result describeVpcClassicLink(array $args = [])
  * @method \GuzzleHttp\Promise\Promise describeVpcClassicLinkAsync(array $args = [])
+ * @method \Aws\Result describeVpcClassicLinkDnsSupport(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise describeVpcClassicLinkDnsSupportAsync(array $args = [])
  * @method \Aws\Result describeVpcEndpointServices(array $args = [])
  * @method \GuzzleHttp\Promise\Promise describeVpcEndpointServicesAsync(array $args = [])
  * @method \Aws\Result describeVpcEndpoints(array $args = [])
@@ -277,6 +300,8 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise disableVgwRoutePropagationAsync(array $args = [])
  * @method \Aws\Result disableVpcClassicLink(array $args = [])
  * @method \GuzzleHttp\Promise\Promise disableVpcClassicLinkAsync(array $args = [])
+ * @method \Aws\Result disableVpcClassicLinkDnsSupport(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise disableVpcClassicLinkDnsSupportAsync(array $args = [])
  * @method \Aws\Result disassociateAddress(array $args = [])
  * @method \GuzzleHttp\Promise\Promise disassociateAddressAsync(array $args = [])
  * @method \Aws\Result disassociateRouteTable(array $args = [])
@@ -287,8 +312,12 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise enableVolumeIOAsync(array $args = [])
  * @method \Aws\Result enableVpcClassicLink(array $args = [])
  * @method \GuzzleHttp\Promise\Promise enableVpcClassicLinkAsync(array $args = [])
+ * @method \Aws\Result enableVpcClassicLinkDnsSupport(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise enableVpcClassicLinkDnsSupportAsync(array $args = [])
  * @method \Aws\Result getConsoleOutput(array $args = [])
  * @method \GuzzleHttp\Promise\Promise getConsoleOutputAsync(array $args = [])
+ * @method \Aws\Result getConsoleScreenshot(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise getConsoleScreenshotAsync(array $args = [])
  * @method \Aws\Result getPasswordData(array $args = [])
  * @method \GuzzleHttp\Promise\Promise getPasswordDataAsync(array $args = [])
  * @method \Aws\Result importImage(array $args = [])
@@ -301,16 +330,24 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise importSnapshotAsync(array $args = [])
  * @method \Aws\Result importVolume(array $args = [])
  * @method \GuzzleHttp\Promise\Promise importVolumeAsync(array $args = [])
+ * @method \Aws\Result modifyHosts(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise modifyHostsAsync(array $args = [])
+ * @method \Aws\Result modifyIdFormat(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise modifyIdFormatAsync(array $args = [])
  * @method \Aws\Result modifyImageAttribute(array $args = [])
  * @method \GuzzleHttp\Promise\Promise modifyImageAttributeAsync(array $args = [])
  * @method \Aws\Result modifyInstanceAttribute(array $args = [])
  * @method \GuzzleHttp\Promise\Promise modifyInstanceAttributeAsync(array $args = [])
+ * @method \Aws\Result modifyInstancePlacement(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise modifyInstancePlacementAsync(array $args = [])
  * @method \Aws\Result modifyNetworkInterfaceAttribute(array $args = [])
  * @method \GuzzleHttp\Promise\Promise modifyNetworkInterfaceAttributeAsync(array $args = [])
  * @method \Aws\Result modifyReservedInstances(array $args = [])
  * @method \GuzzleHttp\Promise\Promise modifyReservedInstancesAsync(array $args = [])
  * @method \Aws\Result modifySnapshotAttribute(array $args = [])
  * @method \GuzzleHttp\Promise\Promise modifySnapshotAttributeAsync(array $args = [])
+ * @method \Aws\Result modifySpotFleetRequest(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise modifySpotFleetRequestAsync(array $args = [])
  * @method \Aws\Result modifySubnetAttribute(array $args = [])
  * @method \GuzzleHttp\Promise\Promise modifySubnetAttributeAsync(array $args = [])
  * @method \Aws\Result modifyVolumeAttribute(array $args = [])
@@ -319,12 +356,16 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise modifyVpcAttributeAsync(array $args = [])
  * @method \Aws\Result modifyVpcEndpoint(array $args = [])
  * @method \GuzzleHttp\Promise\Promise modifyVpcEndpointAsync(array $args = [])
+ * @method \Aws\Result modifyVpcPeeringConnectionOptions(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise modifyVpcPeeringConnectionOptionsAsync(array $args = [])
  * @method \Aws\Result monitorInstances(array $args = [])
  * @method \GuzzleHttp\Promise\Promise monitorInstancesAsync(array $args = [])
  * @method \Aws\Result moveAddressToVpc(array $args = [])
  * @method \GuzzleHttp\Promise\Promise moveAddressToVpcAsync(array $args = [])
  * @method \Aws\Result purchaseReservedInstancesOffering(array $args = [])
  * @method \GuzzleHttp\Promise\Promise purchaseReservedInstancesOfferingAsync(array $args = [])
+ * @method \Aws\Result purchaseScheduledInstances(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise purchaseScheduledInstancesAsync(array $args = [])
  * @method \Aws\Result rebootInstances(array $args = [])
  * @method \GuzzleHttp\Promise\Promise rebootInstancesAsync(array $args = [])
  * @method \Aws\Result registerImage(array $args = [])
@@ -333,6 +374,8 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise rejectVpcPeeringConnectionAsync(array $args = [])
  * @method \Aws\Result releaseAddress(array $args = [])
  * @method \GuzzleHttp\Promise\Promise releaseAddressAsync(array $args = [])
+ * @method \Aws\Result releaseHosts(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise releaseHostsAsync(array $args = [])
  * @method \Aws\Result replaceNetworkAclAssociation(array $args = [])
  * @method \GuzzleHttp\Promise\Promise replaceNetworkAclAssociationAsync(array $args = [])
  * @method \Aws\Result replaceNetworkAclEntry(array $args = [])
@@ -363,6 +406,8 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise revokeSecurityGroupIngressAsync(array $args = [])
  * @method \Aws\Result runInstances(array $args = [])
  * @method \GuzzleHttp\Promise\Promise runInstancesAsync(array $args = [])
+ * @method \Aws\Result runScheduledInstances(array $args = [])
+ * @method \GuzzleHttp\Promise\Promise runScheduledInstancesAsync(array $args = [])
  * @method \Aws\Result startInstances(array $args = [])
  * @method \GuzzleHttp\Promise\Promise startInstancesAsync(array $args = [])
  * @method \Aws\Result stopInstances(array $args = [])
@@ -373,22 +418,103 @@ use Aws\Api\ApiProvider;
  * @method \GuzzleHttp\Promise\Promise unassignPrivateIpAddressesAsync(array $args = [])
  * @method \Aws\Result unmonitorInstances(array $args = [])
  * @method \GuzzleHttp\Promise\Promise unmonitorInstancesAsync(array $args = [])
+ * @method \Aws\Result describeHostReservationOfferings(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise describeHostReservationOfferingsAsync(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \Aws\Result describeHostReservations(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise describeHostReservationsAsync(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \Aws\Result describeIdentityIdFormat(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise describeIdentityIdFormatAsync(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \Aws\Result getHostReservationPurchasePreview(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise getHostReservationPurchasePreviewAsync(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \Aws\Result modifyIdentityIdFormat(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise modifyIdentityIdFormatAsync(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \Aws\Result purchaseHostReservation(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise purchaseHostReservationAsync(array $args = []) (supported in versions 2016-04-01, 2016-09-15, 2016-11-15)
+ * @method \Aws\Result acceptReservedInstancesExchangeQuote(array $args = []) (supported in versions 2016-09-15, 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise acceptReservedInstancesExchangeQuoteAsync(array $args = []) (supported in versions 2016-09-15, 2016-11-15)
+ * @method \Aws\Result getReservedInstancesExchangeQuote(array $args = []) (supported in versions 2016-09-15, 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise getReservedInstancesExchangeQuoteAsync(array $args = []) (supported in versions 2016-09-15, 2016-11-15)
+ * @method \Aws\Result assignIpv6Addresses(array $args = []) (supported in versions 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise assignIpv6AddressesAsync(array $args = []) (supported in versions 2016-11-15)
+ * @method \Aws\Result associateSubnetCidrBlock(array $args = []) (supported in versions 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise associateSubnetCidrBlockAsync(array $args = []) (supported in versions 2016-11-15)
+ * @method \Aws\Result associateVpcCidrBlock(array $args = []) (supported in versions 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise associateVpcCidrBlockAsync(array $args = []) (supported in versions 2016-11-15)
+ * @method \Aws\Result createEgressOnlyInternetGateway(array $args = []) (supported in versions 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise createEgressOnlyInternetGatewayAsync(array $args = []) (supported in versions 2016-11-15)
+ * @method \Aws\Result deleteEgressOnlyInternetGateway(array $args = []) (supported in versions 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise deleteEgressOnlyInternetGatewayAsync(array $args = []) (supported in versions 2016-11-15)
+ * @method \Aws\Result describeEgressOnlyInternetGateways(array $args = []) (supported in versions 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise describeEgressOnlyInternetGatewaysAsync(array $args = []) (supported in versions 2016-11-15)
+ * @method \Aws\Result disassociateSubnetCidrBlock(array $args = []) (supported in versions 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise disassociateSubnetCidrBlockAsync(array $args = []) (supported in versions 2016-11-15)
+ * @method \Aws\Result disassociateVpcCidrBlock(array $args = []) (supported in versions 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise disassociateVpcCidrBlockAsync(array $args = []) (supported in versions 2016-11-15)
+ * @method \Aws\Result unassignIpv6Addresses(array $args = []) (supported in versions 2016-11-15)
+ * @method \GuzzleHttp\Promise\Promise unassignIpv6AddressesAsync(array $args = []) (supported in versions 2016-11-15)
  */
 class Ec2Client extends AwsClient
 {
+    public static function getArguments()
+    {
+        $args = parent::getArguments();
+        return $args + [
+            'idempotency_auto_fill' => [
+                'type'    => 'config',
+                'valid'   => ['bool'],
+                'doc'     => 'Set to false to disable SDK to populate parameters that'
+                    . ' enabled \'idempotencyToken\' trait with a random UUID v4'
+                    . ' value on your behalf. Using default value \'true\' still allows'
+                    . ' parameter value to be overwritten when provided. Note:'
+                    . ' auto-fill only works when cryptographically secure random'
+                    . ' bytes generator functions(random_bytes, openssl_random_pseudo_bytes'
+                    . ' or mcrypt_create_iv) can be found.',
+                'default' => true,
+            ],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * In addition to the options available to
+     * {@see Aws\AwsClient::__construct}, Ec2Client accepts the following
+     * options:
+     *
+     * - idempotency_auto_fill: (bool) Set to false to disable SDK to populate
+     *   parameters that enabled 'idempotencyToken' trait with a default UUID v4
+     *   value on your behalf. Using default value 'true' still allows parameter
+     *   value to be overwritten when provided.
+     *
+     * @param array $args
+     */
     public function __construct(array $args)
     {
         $args['with_resolved'] = function (array $args) {
             $this->getHandlerList()->appendInit(
-                CopySnapshotMiddleware::wrap(
+                PresignUrlMiddleware::wrap(
                     $this,
-                    $args['endpoint_provider']
+                    $args['endpoint_provider'],
+                    [
+                        'operations' => [
+                            'CopySnapshot',
+                        ],
+                        'service' => 'ec2',
+                        'presign_param' => 'PresignedUrl',
+                    ]
                 ),
                 'ec2.copy_snapshot'
             );
         };
 
         parent::__construct($args);
+        if ($this->getConfig('idempotency_auto_fill')) {
+            $stack = $this->getHandlerList();
+            $stack->prependInit(
+                IdempotencyTokenMiddleware::wrap($this->getApi()),
+                'ec2.idempotency_auto_fill'
+            );
+        }
     }
 
     /**

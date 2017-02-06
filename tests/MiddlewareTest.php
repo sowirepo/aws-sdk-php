@@ -8,6 +8,7 @@ use Aws\Command;
 use Aws\CommandInterface;
 use Aws\Credentials\Credentials;
 use Aws\Credentials\CredentialProvider;
+use Aws\Exception\AwsException;
 use Aws\HandlerList;
 use Aws\Middleware;
 use Aws\MockHandler;
@@ -70,6 +71,21 @@ class MiddlewareTest extends \PHPUnit_Framework_TestCase
         $handler = $list->resolve();
         $handler(new Command('foo'), new Request('GET', 'http://127.0.0.1'))->wait();
         $this->assertCount(0, $mock);
+    }
+
+    public function testAddInvocationId()
+    {
+        $list = new HandlerList();
+        $mock = function ($command, $request) {
+            $this->assertTrue($request->hasHeader('aws-sdk-invocation-id'));
+            return \GuzzleHttp\Promise\promise_for(
+                new Result(['@metadata' => ['statusCode' => 200]])
+            );
+        };
+        $list->setHandler($mock);
+        $list->prependSign(Middleware::invocationId());
+        $handler = $list->resolve();
+        $handler(new Command('foo'), new Request('GET', 'http://exmaple.com'));
     }
 
     public function testAddsSigner()
@@ -246,5 +262,49 @@ class MiddlewareTest extends \PHPUnit_Framework_TestCase
         $request = new Request('GET', 'http://exmaple.com');
         $result = $handler(new Command('Foo'), $request)->wait();
         $this->assertEquals('hi', $result['Test']);
+    }
+
+    public function testCanTimeSuccessfulHandlers()
+    {
+        $list = new HandlerList();
+        $list->setHandler(function () {
+            usleep(1000); // wait for a millisecond
+            return Promise\promise_for(new Result);
+        });
+        $list->prependInit(Middleware::timer());
+        $handler = $list->resolve();
+        $request = new Request('GET', 'http://exmaple.com');
+        $result = $handler(new Command('Foo'), $request)->wait();
+        $this->assertTrue(isset($result['@metadata']['transferStats']['total_time']));
+        $this->assertGreaterThanOrEqual(
+            0.001,
+            $result['@metadata']['transferStats']['total_time']
+        );
+    }
+
+    public function testCanTimeUnsuccessfulHandlers()
+    {
+        $command = new Command('Foo');
+        $list = new HandlerList();
+        $list->setHandler(function () use ($command) {
+            usleep(1000); // wait for a millisecond
+            return Promise\rejection_for(new AwsException('foo', $command));
+        });
+        $list->prependInit(Middleware::timer());
+        $handler = $list->resolve();
+        $request = new Request('GET', 'http://exmaple.com');
+        $promise = $handler($command, $request)->then(
+            function () {
+                $this->fail('Success handler should not have been invoked');
+            },
+            function (AwsException $e) {
+                $this->assertNotNull($e->getTransferInfo('total_time'));
+                $this->assertGreaterThanOrEqual(0.001, $e->getTransferInfo('total_time'));
+
+                return true;
+            }
+        );
+
+        $promise->wait();
     }
 }

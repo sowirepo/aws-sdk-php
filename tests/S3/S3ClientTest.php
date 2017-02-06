@@ -1,10 +1,15 @@
 <?php
 namespace Aws\Test\S3;
 
+use Aws\Command;
+use Aws\Exception\AwsException;
 use Aws\Result;
+use Aws\S3\Exception\S3Exception;
+use Aws\S3\MultipartUploader;
 use Aws\S3\S3Client;
 use Aws\Test\UsesServiceTrait;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\RejectedPromise;
@@ -78,9 +83,30 @@ class S3ClientTest extends \PHPUnit_Framework_TestCase
         $this->assertContains('X-Amz-Signature=', $url);
     }
 
+    public function testCreatingPresignedUrlDoesNotPermanentlyRemoveSigner()
+    {
+        $sent = false;
+        $client = new S3Client([
+            'region' => 'us-east-1',
+            'version' => 'latest',
+            'credentials' => ['key' => 'foo', 'secret'  => 'bar'],
+            'http_handler' => function (RequestInterface $request) use (&$sent) {
+                $sent = true;
+                foreach (['X-Amz-Date', 'Authorization'] as $signatureHeader) {
+                    $this->assertTrue($request->hasHeader($signatureHeader));
+                }
+                return Promise\promise_for(new Response);
+            },
+        ]);
+        $command = $client->getCommand('GetObject', ['Bucket' => 'foo', 'Key' => 'bar']);
+        $client->createPresignedRequest($command, 1342138769)->getUri();
+        $client->execute($command);
+        $this->assertTrue($sent);
+    }
+
     public function testCreatesPresignedUrlsWithSpecialCharacters()
     {
-        $client = S3Client::factory([
+        $client = new S3Client([
             'region'      => 'us-east-1',
             'version'     => 'latest',
             'credentials' => ['key' => 'foo', 'secret'  => 'bar']
@@ -120,18 +146,11 @@ class S3ClientTest extends \PHPUnit_Framework_TestCase
 
     private function getS3ErrorMock($errCode, $statusCode)
     {
-        $e = $this->getMockBuilder('Aws\S3\Exception\S3Exception')
-            ->disableOriginalConstructor()
-            ->setMethods(['getAwsErrorCode', 'getStatusCode'])
-            ->getMock();
-        $e->expects($this->any())
-            ->method('getAwsErrorCode')
-            ->will($this->returnValue($errCode));
-        $e->expects($this->any())
-            ->method('getStatusCode')
-            ->will($this->returnValue($statusCode));
-
-        return $e;
+        $context = [
+            'code' => $errCode,
+            'response' => new Response($statusCode),
+        ];
+        return new S3Exception('', new Command('mockCommand'), $context);
     }
 
     /**
@@ -176,21 +195,6 @@ class S3ClientTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @dataProvider getUploadTestCases
-     */
-    public function testUploadHelperDoesCorrectOperation(
-        StreamInterface $body,
-        array $mockedResults,
-        array $options
-    ) {
-        /** @var \Aws\S3\S3Client $client */
-        $client = $this->getTestClient('S3');
-        $this->addMockResults($client, $mockedResults);
-        $result = $client->upload('bucket', 'key', $body, 'private', $options);
-        $this->assertEquals('https://s3.amazonaws.com/bucket/key', $result['ObjectURL']);
-    }
-
-    /**
      * @expectedException \RuntimeException
      */
     public function testEnsuresPrefixOrRegexSuppliedForDeleteMatchingObjects()
@@ -232,65 +236,6 @@ class S3ClientTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(['foo/bar/baz', 'foo/bar/bam'], $agg);
     }
 
-    public function getUploadTestCases()
-    {
-        $putObject = new Result();
-        $initiate = new Result(['UploadId' => 'foo']);
-        $putPart = new Result(['ETag' => 'bar']);
-        $complete = new Result(['Location' => 'https://s3.amazonaws.com/bucket/key']);
-
-        return [
-            [
-                // 3 MB, known-size stream (put)
-                $this->generateStream(1024 * 1024 * 3),
-                [$putObject],
-                ['before_upload' => function () {}]
-            ],
-            [
-                // 3 MB, unknown-size stream (put)
-                $this->generateStream(1024 * 1024 * 3, false),
-                [$putObject],
-                []
-            ],
-            [
-                // 6 MB, known-size stream (put)
-                $this->generateStream(1024 * 1024 * 6),
-                [$putObject],
-                []
-            ],
-            [
-                // 6 MB, known-size stream, above threshold (mup)
-                $this->generateStream(1024 * 1024 * 6),
-                [$initiate, $putPart, $putPart, $complete],
-                ['threshold' => 1024 * 1024 * 4]
-            ],
-            [
-                // 6 MB, unknown-size stream (mup)
-                $this->generateStream(1024 * 1024 * 6, false),
-                [$initiate, $putPart, $putPart, $complete],
-                []
-            ],
-            [
-                // 6 MB, unknown-size, non-seekable stream (mup)
-                $this->generateStream(1024 * 1024 * 6, false, false),
-                [$initiate, $putPart, $putPart, $complete],
-                []
-            ]
-        ];
-    }
-
-    private function generateStream($size, $sizeKnown = true, $seekable = true)
-    {
-        return FnStream::decorate(Psr7\stream_for(str_repeat('.', $size)), [
-            'getSize' => function () use ($sizeKnown, $size) {
-                return $sizeKnown ? $size : null;
-            },
-            'isSeekable' => function () use ($seekable) {
-                return (bool) $seekable;
-            }
-        ]);
-    }
-
     /**
      * @expectedException \RuntimeException
      * @expectedExceptionMessage Mock queue is empty. Trying to send a PutObject
@@ -312,14 +257,38 @@ class S3ClientTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessage Mock queue is empty. Trying to send a PutObject
+     */
+    public function testProxiesToObjectUpload()
+    {
+        $client = $this->getTestClient('S3');
+        $client->upload('bucket', 'key', 'body');
+    }
+
+    /**
+     * @expectedException \RuntimeException
+     * @expectedExceptionMessage Mock queue is empty. Trying to send a HeadObject
+     */
+    public function testProxiesToObjectCopy()
+    {
+        $client = $this->getTestClient('S3');
+        $client->copy('fromBucket', 'fromKey', 'toBucket', 'toKey');
+    }
+
+    /**
      * @dataProvider getTestCasesForLocationConstraints
      */
-    public function testAddsLocationConstraintAutomatically($region, $command, $contains)
+    public function testAddsLocationConstraintAutomatically($region, $target, $command, $contains)
     {
         $client = $this->getTestClient('S3', ['region' => $region]);
-        $command = $client->getCommand($command, ['Bucket' => 'foo']);
+        $params = ['Bucket' => 'foo'];
+        if ($region !== $target) {
+            $params['CreateBucketConfiguration'] = ['LocationConstraint' => $target];
+        }
+        $command = $client->getCommand($command, $params);
 
-        $text = "<LocationConstraint>{$region}</LocationConstraint>";
+        $text = "<LocationConstraint>{$target}</LocationConstraint>";
         $body = (string) \Aws\serialize($command)->getBody();
         if ($contains) {
             $this->assertContains($text, $body);
@@ -331,9 +300,11 @@ class S3ClientTest extends \PHPUnit_Framework_TestCase
     public function getTestCasesForLocationConstraints()
     {
         return [
-            ['us-west-2', 'CreateBucket', true],
-            ['us-east-1', 'CreateBucket', false],
-            ['us-west-2', 'HeadBucket',   false],
+            ['us-west-2', 'us-west-2', 'CreateBucket', true],
+            ['us-east-1', 'us-east-1', 'CreateBucket', false],
+            ['us-west-2', 'us-west-2', 'HeadBucket',   false],
+            ['us-west-2', 'eu-west-1', 'CreateBucket', true],
+            ['us-west-2', 'us-east-1', 'CreateBucket', false],
         ];
     }
 
@@ -357,6 +328,26 @@ class S3ClientTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('sink=baz', (string) $result['Body']);
     }
 
+    public function testRequestSucceedsWithColon()
+    {
+        $key = 'aaa:bbb';
+        $s3 = $this->getTestClient('S3', [
+            'http_handler' => function (RequestInterface $request) use ($key) {
+                $this->assertContains(
+                    urlencode($key),
+                    (string) $request->getUri()
+                );
+
+                return Promise\promise_for(new Psr7\Response);
+            }
+        ]);
+
+        $s3->getObject([
+            'Bucket' => 'bucket',
+            'Key'    => $key,
+        ]);
+    }
+
     public function testRetriesConnectionErrors()
     {
         $retries = 11;
@@ -364,10 +355,7 @@ class S3ClientTest extends \PHPUnit_Framework_TestCase
             'version' => 'latest',
             'region' => 'us-west-2',
             'retries' => $retries,
-            'http_handler' => function (
-                RequestInterface $request,
-                array $options
-            ) use (&$retries) {
+            'http_handler' => function () use (&$retries) {
                 if (0 === --$retries) {
                     return new FulfilledPromise(new Response);
                 }
@@ -406,10 +394,7 @@ class S3ClientTest extends \PHPUnit_Framework_TestCase
             'version' => 'latest',
             'region' => 'us-west-2',
             'retries' => $retries,
-            'http_handler' => function (
-                RequestInterface $request,
-                array $options
-            ) use (&$retries, $failingSuccess) {
+            'http_handler' => function () use (&$retries, $failingSuccess) {
                 if (0 === --$retries) {
                     return new FulfilledPromise(new Response(
                         200,
@@ -504,5 +489,467 @@ EOXML;
     private function getWellFormedXml()
     {
         return '<?xml version="1.0" encoding="UTF-8"?><node></node>';
+    }
+
+    /**
+     * @expectedException \Aws\S3\Exception\S3Exception
+     * @expectedExceptionMessageRegExp /Your socket connection to the server/
+     */
+    public function testClientSocketTimeoutErrorsAreNotRetriedIndefinitely()
+    {
+        $retries = 11;
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'retries' => $retries,
+            'http_handler' => function () {
+                return new RejectedPromise([
+                    'connection_error' => false,
+                    'exception' => $this->getMockBuilder(RequestException::class)
+                        ->disableOriginalConstructor()
+                        ->getMock(),
+                    'response' => new Response(400, [], $this->getSocketTimeoutResponse()),
+                ]);
+            },
+        ]);
+
+        $client->putObject([
+            'Bucket' => 'bucket',
+            'Key' => 'key',
+            'Body' => Psr7\stream_for('x'),
+        ]);
+    }
+
+    private function getSocketTimeoutResponse()
+    {
+        return <<<EOXML
+<?xml version="1.0" encoding="UTF-8"?>
+<Error>
+    <Code>RequestTimeout</Code>
+    <Message>Your socket connection to the server was not read from or written to within the timeout period. Idle connections will be closed.</Message>
+    <RequestId>REQUEST_ID</RequestId>
+    <HostId>HOST_ID</HostId>
+</Error>
+EOXML;
+    }
+
+    public function testNetworkingErrorsAreRetriedOnIdempotentCommands()
+    {
+        $networkingError = $this->getMockBuilder(RequestException::class)
+            ->disableOriginalConstructor()
+            ->setMethods([])
+            ->getMock();
+
+        $retries = 11;
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'retries' => $retries,
+            'http_handler' => function () use (&$retries, $networkingError) {
+                if (0 === --$retries) {
+                    return new FulfilledPromise(new Response);
+                }
+
+                return new RejectedPromise([
+                    'connection_error' => false,
+                    'exception' => $networkingError,
+                    'response' => null,
+                ]);
+            },
+        ]);
+
+        $client->putObject([
+            'Bucket' => 'bucket',
+            'Key' => 'key',
+        ]);
+
+        $this->assertEquals(0, $retries);
+    }
+
+    /**
+     * @expectedException \Aws\S3\Exception\S3Exception
+     * @expectedExceptionMessageRegExp /CompleteMultipartUpload/
+     */
+    public function testNetworkingErrorsAreNotRetriedOnNonIdempotentCommands()
+    {
+        $networkingError = $this->getMockBuilder(RequestException::class)
+            ->disableOriginalConstructor()
+            ->setMethods([])
+            ->getMock();
+
+        $retries = 11;
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'retries' => $retries,
+            'http_handler' => function () use (&$retries, $networkingError) {
+                if (0 === --$retries) {
+                    return new FulfilledPromise(new Response);
+                }
+
+                return new RejectedPromise([
+                    'connection_error' => false,
+                    'exception' => $networkingError,
+                    'response' => null,
+                ]);
+            },
+        ]);
+
+        $client->completeMultipartUpload([
+            'Bucket' => 'bucket',
+            'Key' => 'key',
+            'UploadId' => 1,
+        ]);
+
+        $this->assertEquals(0, $retries);
+    }
+
+    public function testErrorsWithUnparseableBodiesCanBeRetried()
+    {
+        $networkingError = $this->getMockBuilder(RequestException::class)
+            ->disableOriginalConstructor()
+            ->setMethods([])
+            ->getMock();
+
+        $retries = 11;
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'retries' => $retries,
+            'http_handler' => function () use (&$retries, $networkingError) {
+                if (0 === --$retries) {
+                    return new FulfilledPromise(new Response);
+                }
+
+                return new RejectedPromise([
+                    'connection_error' => false,
+                    'exception' => $networkingError,
+                    'response' => new Response(200, [], openssl_random_pseudo_bytes(2048)),
+                ]);
+            },
+        ]);
+
+        $client->getObject([
+            'Bucket' => 'bucket',
+            'Key' => 'key',
+        ]);
+
+        $this->assertEquals(0, $retries);
+    }
+
+    public function testListObjectsAppliesUrlEncodingWhenNoneSupplied()
+    {
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'http_handler' => function (RequestInterface $request) {
+                $query = Psr7\parse_query($request->getUri()->getQuery());
+                $this->assertArrayHasKey('encoding-type', $query);
+                $this->assertSame('url', $query['encoding-type']);
+
+                return new FulfilledPromise(new Response);
+            },
+        ]);
+
+        $client->listObjects(['Bucket' => 'bucket']);
+    }
+
+    public function testListObjectsUrlDecodesEncodedKeysWhenEncodingNotSupplied()
+    {
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'http_handler' => function () {
+                return new FulfilledPromise(new Response(200, [], $this->getUrlEncodedListObjectsResponse()));
+            },
+        ]);
+
+        $response = $client->listObjects(['Bucket' => 'bucket']);
+        $this->assertSame(',', $response['Delimiter']);
+        $this->assertSame('test/yearmonth=201601/file2', $response['Marker']);
+        $this->assertSame('test/yearmonth=201601/file2', $response['NextMarker']);
+        $this->assertSame('test/yearmonth=201601/', $response['Prefix']);
+        $this->assertSame('test/yearmonth=201601/file1', $response['Contents'][0]['Key']);
+        $this->assertSame('test/yearmonth=201601/', $response['CommonPrefixes'][0]['Prefix']);
+    }
+
+    public function testListObjectsDoesNotUrlDecodeEncodedKeysWhenEncodingSupplied()
+    {
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'http_handler' => function () {
+                return new FulfilledPromise(new Response(200, [], $this->getUrlEncodedListObjectsResponse()));
+            },
+        ]);
+
+        $response = $client->listObjects([
+            'Bucket' => 'bucket',
+            'EncodingType' => 'url',
+        ]);
+
+        $this->assertSame('%2C', $response['Delimiter']);
+        $this->assertSame('test/yearmonth%3D201601/file2', $response['Marker']);
+        $this->assertSame('test/yearmonth%3D201601/file2', $response['NextMarker']);
+        $this->assertSame('test/yearmonth%3D201601/', $response['Prefix']);
+        $this->assertSame('test/yearmonth%3D201601/file1', $response['Contents'][0]['Key']);
+        $this->assertSame('test/yearmonth%3D201601/', $response['CommonPrefixes'][0]['Prefix']);
+    }
+
+    private function getUrlEncodedListObjectsResponse()
+    {
+        return <<<EOXML
+<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+    <Prefix>test/yearmonth%3D201601/</Prefix>
+    <Marker>test/yearmonth%3D201601/file2</Marker>
+    <NextMarker>test/yearmonth%3D201601/file2</NextMarker>
+    <Delimiter>%2C</Delimiter>
+    <EncodingType>url</EncodingType>
+    <Contents>
+        <Key>test/yearmonth%3D201601/file1</Key>
+    </Contents>
+    <CommonPrefixes>
+        <Prefix>test/yearmonth%3D201601/</Prefix>
+    </CommonPrefixes>
+</ListBucketResult>
+EOXML;
+    }
+
+    public function testHeadObjectDisablesContentDecodingByDefault()
+    {
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'http_handler' => function (RequestInterface $r, array $opts = []) {
+                $this->assertArrayHasKey('decode_content', $opts);
+                $this->assertSame(false, $opts['decode_content']);
+
+                return Promise\promise_for(new Response);
+            }
+        ]);
+
+        $client->headObject(['Bucket' => 'bucket', 'Key' => 'key']);
+    }
+
+    public function testContentDecodingCanBeDisabled()
+    {
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'http' => ['decode_content' => false],
+            'http_handler' => function (RequestInterface $r, array $opts = []) {
+                $this->assertArrayHasKey('decode_content', $opts);
+                $this->assertSame(false, $opts['decode_content']);
+
+                return Promise\promise_for(new Response);
+            }
+        ]);
+
+        $client->getObject(['Bucket' => 'bucket', 'Key' => 'key']);
+    }
+
+    public function testContentDecodingCanBeDisabledOnCommands()
+    {
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'http_handler' => function (RequestInterface $r, array $opts = []) {
+                $this->assertArrayHasKey('decode_content', $opts);
+                $this->assertSame(false, $opts['decode_content']);
+
+                return Promise\promise_for(new Response);
+            }
+        ]);
+
+        $client->getObject([
+            'Bucket' => 'bucket',
+            'Key' => 'key',
+            '@http' => ['decode_content' => false],
+        ]);
+    }
+
+    public function testCanDetermineRegionOfBucket()
+    {
+        $client = new S3Client([
+            'region' => 'us-west-2',
+            'version' => 'latest',
+            'http_handler' => function () {
+                return new FulfilledPromise(new Response(301, [
+                    'X-Amz-Bucket-Region' => 'alderaan-north-1',
+                ]));
+            },
+        ]);
+        $this->assertSame('alderaan-north-1', $client->determineBucketRegion('bucket'));
+
+        $client = new S3Client([
+            'region' => 'us-west-2',
+            'version' => 'latest',
+            'http_handler' => function() {
+                return new RejectedPromise([
+                    'connection_error' => false,
+                    'exception' => $this->getMockBuilder(AwsException::class)
+                        ->disableOriginalConstructor()
+                        ->getMock(),
+                    'response' => new Response(400, [
+                        'X-Amz-Bucket-Region' => 'us-west-2',
+                    ]),
+                ]);
+            },
+        ]);
+        $this->assertSame('us-west-2', $client->determineBucketRegion('bucket'));
+    }
+
+    /**
+     * @expectedException \Aws\Exception\AwsException
+     */
+    public function testDetermineBucketRegionExposeException()
+    {
+        $client = new S3Client([
+            'region' => 'us-west-2',
+            'version' => 'latest',
+            'http_handler' => function() {
+                return new RejectedPromise([
+                    'connection_error' => false,
+                    'exception' => $this->getMockBuilder(AwsException::class)
+                        ->disableOriginalConstructor()
+                        ->getMock(),
+                    'response' => null,
+                ]);
+            },
+        ]);
+        $client->determineBucketRegion('bucket');
+    }
+
+    public function testAppliesS3EndpointMiddleware()
+    {
+        // test applies s3-accelerate.dualstack for valid operations
+        $handler = function (RequestInterface $req) {
+            $this->assertSame(
+                'bucket.s3-accelerate.dualstack.amazonaws.com',
+                $req->getUri()->getHost()
+            );
+            return Promise\promise_for(new Response);
+        };
+
+        $accelerateClient = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'use_accelerate_endpoint' => true,
+            'use_dual_stack_endpoint' => true,
+            'http_handler' => $handler,
+        ]);
+        $accelerateClient->getObject([
+            'Bucket' => 'bucket',
+            'Key' => 'key'
+        ]);
+
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'http_handler' => $handler,
+        ]);
+        $client->getObject([
+            'Bucket' => 'bucket',
+            'Key' => 'key',
+            '@use_accelerate_endpoint' => true,
+            '@use_dual_stack_endpoint' => true,
+        ]);
+
+        // test applies dualstack solo for invalid accelerate operations
+        // when both endpoint is enabled
+        $handler = function (RequestInterface $req) {
+            $this->assertSame(
+                's3.dualstack.us-west-2.amazonaws.com',
+                $req->getUri()->getHost()
+            );
+            return Promise\promise_for(new Response);
+        };
+
+        $accelerateClient = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'use_accelerate_endpoint' => true,
+            'use_dual_stack_endpoint' => true,
+            'http_handler' => $handler,
+        ]);
+        $accelerateClient->createBucket([
+            'Bucket' => 'bucket',
+        ]);
+
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'http_handler' => $handler,
+        ]);
+        $client->createBucket([
+            'Bucket' => 'bucket',
+            '@use_accelerate_endpoint' => true,
+            '@use_dual_stack_endpoint' => true,
+        ]);
+
+        // test applies s3-accelerate for valid operations
+        $handler = function (RequestInterface $req) {
+            $this->assertSame(
+                'bucket.s3-accelerate.amazonaws.com',
+                $req->getUri()->getHost()
+            );
+            return Promise\promise_for(new Response);
+        };
+
+        $accelerateClient = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'use_accelerate_endpoint' => true,
+            'http_handler' => $handler,
+        ]);
+        $accelerateClient->getObject([
+            'Bucket' => 'bucket',
+            'Key' => 'key'
+        ]);
+
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'http_handler' => $handler,
+        ]);
+        $client->getObject([
+            'Bucket' => 'bucket',
+            'Key' => 'key',
+            '@use_accelerate_endpoint' => true,
+        ]);
+
+        // test applies dualstack
+        $handler = function (RequestInterface $req) {
+            $this->assertSame(
+                's3.dualstack.us-west-2.amazonaws.com',
+                $req->getUri()->getHost()
+            );
+            $this->assertContains(
+                'bucket',
+                $req->getUri()->getPath()
+            );
+            return Promise\promise_for(new Response);
+        };
+
+        $dualStackClient = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'use_dual_stack_endpoint' => true,
+            'http_handler' => $handler,
+        ]);
+        $dualStackClient->createBucket([
+            'Bucket' => 'bucket',
+        ]);
+
+        $client = new S3Client([
+            'version' => 'latest',
+            'region' => 'us-west-2',
+            'http_handler' => $handler,
+        ]);
+        $client->createBucket([
+            'Bucket' => 'bucket',
+            '@use_dual_stack_endpoint' => true,
+        ]);
     }
 }

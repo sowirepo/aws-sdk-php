@@ -116,12 +116,12 @@ default provider chain across multiple processes.
 
     use Aws\DoctrineCacheAdapter;
     use Aws\S3\S3Client;
-    use Doctrine\Common\Cache\ApcCache;
+    use Doctrine\Common\Cache\ApcuCache;
 
     $s3 = new S3Client([
         'version'     => 'latest',
         'region'      => 'us-west-2',
-        'credentials' => new DoctrineCacheAdapter(new ApcCache),
+        'credentials' => new DoctrineCacheAdapter(new ApcuCache),
     ]);
 
 You can find more information about providing credentials to a client in the
@@ -211,6 +211,76 @@ auth_strings (array)
     The debug output is extremely useful when diagnosing issues in the AWS
     SDK for PHP. Please provide the debug output for an isolated failure case
     when opening issues on the SDK.
+
+
+.. _config_stats:
+
+stats
+~~~~~
+
+:Type: ``bool|array``
+
+Binds transfer statistics to errors and results returned by SDK operations.
+
+Set to ``true`` to gather transfer statistics on requests sent.
+
+.. code-block:: php
+
+    $s3 = new Aws\S3\S3Client([
+        'version' => 'latest',
+        'region'  => 'us-west-2',
+        'stats'   => true
+    ]);
+
+    // Perform an operation.
+    $result = $s3->listBuckets();
+    // Inspect the stats.
+    $stats = $result['@metadata']['transferStats'];
+
+Alternatively, you can provide an associative array with the following keys:
+
+retries (bool)
+    Set to ``true`` to enable reporting on retries attempted. Retry statistics
+    are collected by default and returned
+
+http (bool)
+    Set to ``true`` to enable collecting statistics from lower level HTTP
+    adapters (e.g., values returned in GuzzleHttp\TransferStats). HTTP handlers
+    must support an __on_transfer_stats option for this to have an effect. HTTP
+    stats are returned as an indexed array of associative arrays; each
+    associative array contains the transfer stats returned for a request by the
+    client's HTTP handler. Disabled by default.
+
+    If a request was retried, each request's transfer
+    stats will be returned, with
+    ``$result['@metadata']['transferStats']['http'][0]`` containing the stats
+    for the first request, ``$result['@metadata']['transferStats']['http'][1]``
+    containing the statistics for the second request, etc.
+
+timer (bool)
+    Set to ``true`` to enable a command timer that reports the total wall clock
+    time spent on an operation in seconds. Disabled by default.
+
+.. code-block:: php
+
+    $s3 = new Aws\S3\S3Client([
+        'version' => 'latest',
+        'region'  => 'us-west-2',
+        'stats'   => [
+            'retries'      => true,
+            'timer'        => false,
+            'http'         => true,
+        ]
+    ]);
+
+    // Perform an operation.
+    $result = $s3->listBuckets();
+    // Inspect the HTTP transfer stats.
+    $stats = $result['@metadata']['transferStats']['http'];
+    // Inspect the number of retries attempted.
+    $stats = $result['@metadata']['transferStats']['retries_attempted'];
+    // Inspect the total backoff delay inserted between retries.
+    $stats = $result['@metadata']['transferStats']['total_retry_delay'];
 
 
 endpoint
@@ -325,7 +395,7 @@ connect_timeout
 ^^^^^^^^^^^^^^^
 
 A float describing the number of seconds to wait while trying to connect to a
-server. Use ``0`` to wait indefinitely (the default behavior).
+server. Use ``60`` to wait indefinitely (the default behavior).
 
 .. code-block:: php
 
@@ -354,6 +424,44 @@ information provided by different HTTP handlers will vary.
 * Pass ``true`` to write debug output to STDOUT.
 * Pass a ``resource`` as returned by ``fopen`` to write debug output to a
   specific PHP stream resource.
+
+
+.. _http_decode_content:
+
+decode_content
+^^^^^^^^^^^^^^
+
+:Type: ``bool``
+
+Instructs the underlying HTTP handler to inflate the body of compressed
+responses. When not enabled, compressed response bodies may be inflated with a
+``GuzzleHttp\Psr7\InflateStream``.
+
+.. note::
+
+    Content decoding is enabled by default in the SDK's default HTTP handler,
+    and for backwards compatibility reasons this default cannot be changed. If
+    you store compressed files in S3, it is recommended that you disable content
+    decoding at the S3 client level.
+
+    .. code-block:: php
+
+        use Aws\S3\S3Client;
+        use GuzzleHttp\Psr7\InflateStream;
+
+        $client = new S3Client([
+            'region'  => 'us-west-2',
+            'version' => 'latest',
+            'http'    => ['decode_content' => false],
+        ]);
+
+        $result = $client->getObject([
+            'Bucket' => 'my-bucket',
+            'Key'    => 'massize_gzipped_file.tgz'
+        ]);
+
+        $compressedBody = $result['Body']; // This content is still gzipped.
+        $inflatedBody = new InflateStream($result['Body']); // This is now readable.
 
 
 .. _http_delay:
@@ -513,7 +621,7 @@ timeout
 
 :Type: ``float``
 
-A float describing the timeout of the request in seconds. Use ``0`` to wait
+A float describing the timeout of the request in seconds. Use ``60`` to wait
 indefinitely (the default behavior).
 
 .. code-block:: php
@@ -767,7 +875,7 @@ to the HTTP handler.
 validate
 ~~~~~~~~
 
-:Type: ``bool``
+:Type: ``bool|array``
 :Default: ``bool(true)``
 
 Set to false to disable client-side parameter validation. You may find that
@@ -781,6 +889,23 @@ difference is negligible.
         'version'  => '2006-03-01',
         'region'   => 'eu-west-1',
         'validate' => false
+    ]);
+
+Set to an associative array of validation options to enable specific validation
+constraints:
+
+- ``required`` - Validate that required parameters are present (on by default).
+- ``min`` - Validate the minimum length of a value (on by default).
+- ``max`` - Validate the maximum length of a value.
+- ``pattern`` - Validate that the value matches a regular expression.
+
+.. code-block:: php
+
+    // Validate only that required values are present.
+    $s3 = new Aws\S3\S3Client([
+        'version'  => '2006-03-01',
+        'region'   => 'eu-west-1',
+        'validate' => ['required' => true]
     ]);
 
 

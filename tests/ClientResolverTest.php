@@ -6,10 +6,12 @@ use Aws\CommandInterface;
 use Aws\Credentials\CredentialProvider;
 use Aws\Credentials\Credentials;
 use Aws\DynamoDb\DynamoDbClient;
+use Aws\Endpoint\Partition;
 use Aws\LruArrayCache;
 use Aws\S3\S3Client;
 use Aws\HandlerList;
 use Aws\Sdk;
+use Aws\Result;
 use Aws\WrappedHttpHandler;
 use GuzzleHttp\Promise\RejectedPromise;
 use Psr\Http\Message\RequestInterface;
@@ -45,10 +47,6 @@ class ClientResolverTest extends \PHPUnit_Framework_TestCase
         } catch (\InvalidArgumentException $e) {}
     }
 
-    /**
-     * @expectedException \Aws\S3\Exception\S3Exception
-     * @expectedExceptionMessage Throwing!
-     */
     public function testCanDisableValidation()
     {
         $c = new DynamoDbClient([
@@ -57,11 +55,24 @@ class ClientResolverTest extends \PHPUnit_Framework_TestCase
             'validate' => false
         ]);
         $command = $c->getCommand('CreateTable');
-        $handler = new WrappedHttpHandler(function () {
-            return new RejectedPromise([
-                'exception' => new \Exception('Throwing!')
-            ]);
-        }, function () {}, function () {}, 'Aws\S3\Exception\S3Exception');
+        $handler = \Aws\constantly(new Result([]));
+        $command->getHandlerList()->setHandler($handler);
+        $c->execute($command);
+    }
+
+    public function testCanDisableSpecificValidationConstraints()
+    {
+        $c = new DynamoDbClient([
+            'region'   => 'x',
+            'version'  => 'latest',
+            'validate' => [
+                'min' => true,
+                'max' => true,
+                'required' => false
+            ]
+        ]);
+        $command = $c->getCommand('CreateTable');
+        $handler = \Aws\constantly(new Result([]));
         $command->getHandlerList()->setHandler($handler);
         $c->execute($command);
     }
@@ -228,7 +239,7 @@ class ClientResolverTest extends \PHPUnit_Framework_TestCase
 [foo]
 aws_access_key_id = foo
 aws_secret_access_key = baz
-aws_security_token = tok
+aws_session_token = tok
 EOT;
         file_put_contents($dir . '/credentials', $ini);
         $home = getenv('HOME');
@@ -278,7 +289,7 @@ EOT;
 
         $c = new Credentials('foo', 'bar');
         $cache = new LruArrayCache;
-        $cache->set('aws_cached_credentials', $c);
+        $cache->set('aws_cached_instance_credentials', $c);
         $r = new ClientResolver(ClientResolver::getDefaultArguments());
         $conf = $r->resolve([
             'service'     => 'sqs',
@@ -483,5 +494,159 @@ EOT;
         $list = new HandlerList();
         $args = [];
         ClientResolver::_apply_endpoint($endpoint, $args, $list);
+    }
+
+    /**
+     * @dataProvider statValueProvider
+     * @param bool|array $userValue
+     * @param array $resolvedValue
+     */
+    public function testAcceptsBooleansAndArraysForSelectiveStatCollection($userValue, array $resolvedValue)
+    {
+        $list = new HandlerList;
+        $args = [];
+        ClientResolver::_apply_stats($userValue, $args, $list);
+        foreach ($resolvedValue as $collector => $enabled) {
+            $this->assertArrayHasKey($collector, $args['stats']);
+            $this->assertSame($enabled, $args['stats'][$collector]);
+        }
+    }
+
+    public function statValueProvider()
+    {
+        return [
+            [
+                // Value provided for all stat collectors
+                ['http' => false, 'retries' => true, 'timer' => false],
+                ['http' => false, 'retries' => true, 'timer' => false],
+            ],
+            [
+                // Value provided for a subset of stat collectors
+                ['retries' => true],
+                ['http' => false, 'retries' => true, 'timer' => false],
+            ],
+            [
+                // Boolean false
+                false,
+                ['http' => false, 'retries' => false, 'timer' => false],
+            ],
+            [
+                // Boolean true
+                true,
+                ['http' => true, 'retries' => true, 'timer' => true],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider endpointProviderReturnProvider
+     *
+     * @param array $args
+     * @param string $argName
+     * @param string $expected
+     * @param string $override
+     */
+    public function testResolvesValuesReturnedByEndpointProvider(
+        array $args,
+        $argName,
+        $expected,
+        $override
+    ) {
+        $resolverArgs = array_intersect_key(
+            ClientResolver::getDefaultArguments(),
+            array_flip(['endpoint_provider', 'service', 'region', 'scheme', $argName])
+        );
+        $resolver = new ClientResolver($resolverArgs);
+        
+        $resolved = $resolver->resolve($args, new HandlerList);
+        $this->assertSame($expected, $resolved[$argName]);
+        
+        $resolved = $resolver->resolve([$argName => $override] + $args, new HandlerList);
+        $this->assertSame($override, $resolved[$argName]);
+    }
+
+    public function endpointProviderReturnProvider()
+    {
+        $partition = new Partition([
+            'partition' => 'aws-test',
+            'dnsSuffix' => 'amazonaws.com',
+            'regions' => [],
+            'services' => [
+                'foo' => [
+                    'endpoints' => [
+                        'bar' => [
+                            'credentialScope' => [
+                                'service' => 'baz',
+                                'region' => 'quux',
+                            ],
+                            'signatureVersions' => ['anonymous'],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+        $invocationArgs = [
+            'endpoint_provider' => $partition,
+            'service' => 'foo',
+            'region' => 'bar',
+        ];
+
+        return [
+            // signatureVersion
+            [$invocationArgs, 'signature_version', 'anonymous', 'v4'],
+            // signingName
+            [$invocationArgs, 'signing_name', 'baz', 'fizz'],
+            // signingRegion
+            [$invocationArgs, 'signing_region', 'quux', 'buzz'],
+        ];
+    }
+
+
+    /**
+     * @dataProvider partitionReturnProvider
+     *
+     * @param array $args
+     * @param string $argName
+     * @param string $expected
+     */
+    public function testSigningValuesAreFetchedFromPartition(
+        array $args,
+        $argName,
+        $expected
+    ) {
+        $resolverArgs = array_intersect_key(
+            ClientResolver::getDefaultArguments(),
+            array_flip(['endpoint_provider', 'endpoint', 'service', 'region', $argName])
+        );
+        $resolver = new ClientResolver($resolverArgs);
+
+        $resolved = $resolver->resolve($args, new HandlerList);
+        $this->assertSame($expected, $resolved[$argName]);
+    }
+
+    public function partitionReturnProvider()
+    {
+        $invocationArgs = ['endpoint' => 'https://foo.bar.amazonaws.com'];
+
+        return [
+            // signatureVersion
+            [
+                ['service' => 's3', 'region' => 'us-west-2'] + $invocationArgs,
+                'signature_version',
+                's3v4',
+            ],
+            // signingName
+            [
+                ['service' => 'iot', 'region' => 'us-west-2'] + $invocationArgs,
+                'signing_name',
+                'execute-api',
+            ],
+            // signingRegion
+            [
+                ['service' => 'dynamodb', 'region' => 'local'] + $invocationArgs,
+                'signing_region',
+                'us-east-1',
+            ],
+        ];
     }
 }
