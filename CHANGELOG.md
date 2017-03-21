@@ -1,5 +1,101 @@
 # CHANGELOG
 
+## 3.24.4 - 2017-03-14
+* `Aws\CloudWatchEvents` - Update documentation
+
+## 3.24.3 - 2017-03-13
+
+* `Aws\CloudWatchEvents` - This update extends Target Data Type for configuring Target behavior during invocation.
+* `Aws\DeviceFarm` - Network shaping allows users to simulate network connections and conditions while testing their Android, iOS, and web apps with AWS Device Farm.
+
+## 3.24.2 - 2017-03-10
+
+* `Aws\CodeDeploy` - Add paginators for Codedeploy
+* `Aws\EMR` - This release includes support for instance fleets in Amazon EMR.
+
+## 3.24.1 - 2017-03-09
+
+* `Aws\APIGateway` - API Gateway has added support for ACM certificates on custom domain names. Both Amazon-issued certificates and uploaded third-part certificates are supported.
+* `Aws\CloudDirectory` - Introduces a new Cloud Directory API that enables you to retrieve all available parent paths for any type of object (a node, leaf node, policy node, and index node) in a hierarchy.
+
+## 3.24.0 - 2017-03-08
+
+* `Aws\WorkDocs` - The Administrative SDKs for Amazon WorkDocs provides full administrator level access to WorkDocs site resources, allowing developers to integrate their applications to manage WorkDocs users, content and permissions programmatically
+
+## 3.23.3 - 2017-03-08
+
+* `Aws\RDS` - Add support to using encrypted clusters as cross-region replication masters. Update CopyDBClusterSnapshot API to support encrypted cross region copy of Aurora cluster snapshots.
+
+## 3.23.2 - 2017-03-06
+
+* `Aws\Budgets` - When creating or editing a budget via the AWS Budgets API you can define notifications that are sent to subscribers when the actual or forecasted value for cost or usage exceeds the notificationThreshold associated with the budget notification object. Starting today, the maximum allowed value for the notificationThreshold was raised from 100 to 300. This change was made to give you more flexibility when setting budget notifications.
+* `Aws\OpsWorksCM` - OpsWorks for Chef Automate has added a new field "AssociatePublicIpAddress" to the CreateServer request, "CloudFormationStackArn" to the Server model and "TERMINATED" server state.
+
+## 3.23.1 - 2017-02-28
+
+* `Aws\MTurk` - Update namespace for `Amazon Mechanical Turk`
+
+## 3.23.0 - 2017-02-28
+
+* `Aws\DynamoDB` - Time to Live (TTL) is a feature that allows you to define when items in a table expire and can be purged from the database, so that you don't have to track expired data and delete it manually. With TTL enabled on a DynamoDB table, you can set a timestamp for deletion on a per-item basis, allowing you to limit storage usage to only those records that are relevant.
+* `Aws\DynamoDBStreams` - Added support for TTL on a DynamoDB tables
+* `Aws\IAM` - Added support for AWS Organizations service control policies (SCPs) to SimulatePrincipalPolicy operation. If there are SCPs associated with the simulated user's account, their effect on the result is captured in the OrganizationDecisionDetail element in the EvaluationResult.
+* `Aws\MechanicalTurkRequesterService` - Amazon Mechanical Turk is a web service that provides an on-demand, scalable, human workforce to complete jobs that humans can do better than computers, for example, recognizing objects in photos.
+* `Aws\Organizations` - AWS Organizations is a web service that enables you to consolidate your multiple AWS accounts into an organization and centrally manage your accounts and their resources.
+
+## 3.22.11 - 2017-02-24
+
+* `Aws\ElasticsearchService` - Added three new API calls to existing Amazon Elasticsearch service to expose Amazon Elasticsearch imposed limits to customers.
+
+## 3.22.10 - 2017-02-24
+
+* `Aws\Ec2` - New EC2 I3 instance type
+
+## 3.22.9 - 2017-02-22
+
+* `Aws\CloudDirectory` - ListObjectAttributes documentation updated based on forum feedback
+* `Aws\ElasticBeanstalk` - Elastic Beanstalk adds support for creating and managing custom platform.
+* `Aws\GameLift` - Allow developers to configure global queues for creating GameSessions. Allow PlayerData on PlayerSessions to store player-specific data.
+* `Aws\Route53` - Added support for operations CreateVPCAssociationAuthorization and DeleteVPCAssociationAuthorization to throw a ConcurrentModification error when a conflicting modification occurs in parallel to the authorizations in place for a given hosted zone.
+
+## 3.22.8 - 2017-02-21
+
+* `Aws\Ec2` - Added the billingProduct parameter to the RegisterImage API
+
+## 3.22.7 - 2017-02-17
+
+* `Aws\DirectConnect` - Adding operations to support new LAG feature
+
+## 3.22.6 - 2017-02-17
+
+* `Aws\CognitoIdentity` - Allow createIdentityPool and updateIdentityPool API to set server side token check value on identity pool
+* `Aws\Config` - Enable customers to use dryrun mode for PutEvaluations
+
+## 3.22.5 - 2017-02-15
+
+* `Aws\Kms` - Added support for tagging
+
+## 3.22.4 - 2017-02-14
+
+* `Aws\Ec2` - Added support for new `ModifyVolume` API
+
+## 3.22.3 - 2017-02-10
+
+* Update endpoints.json with valid endpoints
+
+## 3.22.2 - 2017-02-10
+
+* `Aws\StorageGateway` - Added support for addition of clientList parameter to existing File share APIs
+
+## 3.22.1 - 2017-02-09
+
+* `Aws\Ec2` - Added support to associate `IAM profiles` to running instances API
+* `Aws\Rekognition` - Added support for `age` to the face description from `DetectFaces` and `IndexFaces`
+
+## 3.22.0 - 2017-02-08
+
+* `Aws\LexRuntimeService` - Added support for new service `Amazon Lex Runtime Service`
+
 ## 3.21.6 - 2017-01-27
 
 * `Aws\CloudDirectory` - Added support for new service `AWS Cloud Directory`
