@@ -10,7 +10,8 @@ The following scheme is used to map unix filesystem modes to canned acl:
 [![Total Downloads](https://img.shields.io/packagist/dt/aws/aws-sdk-php.svg?style=flat)](https://packagist.org/packages/aws/aws-sdk-php)
 [![Build Status](https://img.shields.io/travis/aws/aws-sdk-php.svg?style=flat)](https://travis-ci.org/aws/aws-sdk-php)
 [![Apache 2 License](https://img.shields.io/packagist/l/aws/aws-sdk-php.svg?style=flat)](http://aws.amazon.com/apache-2-0/)
-[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/aws/aws-sdk-php?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Gitter](https://badges.gitter.im/aws/aws-sdk-php.svg)](https://gitter.im/aws/aws-sdk-php?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![codecov](https://codecov.io/gh/aws/aws-sdk-php/branch/master/graph/badge.svg)](https://codecov.io/gh/aws/aws-sdk-php)
 
 The **AWS SDK for PHP** makes it easy for developers to access [Amazon Web
 Services][aws] in their PHP code, and build robust applications and software
@@ -28,9 +29,6 @@ or by downloading a single zip or phar file from our [latest release][latest-rel
 * [Issues][sdk-issues] – Report issues, submit pull requests, and get involved
   (see [Apache 2.0 License][sdk-license])
 * [@awsforphp][sdk-twitter] – Follow us on Twitter
-* For Version 2 of the SDK:
-  * [User Guide][docs-guide-v2]
-  * [API Docs][docs-api-v2]
 
 ## Getting Help
 
@@ -116,7 +114,7 @@ try {
         'Body'   => fopen('/path/to/file', 'r'),
         'ACL'    => 'public-read',
     ]);
-} catch (Aws\Exception\S3Exception $e) {
+} catch (Aws\S3\Exception\S3Exception $e) {
     echo "There was an error uploading the file.\n";
 }
 ```
@@ -129,6 +127,9 @@ try {
 * [AWS SDK Bundle for Symfony][mod-symfony]
 * [Amazon SNS Message Validator for PHP][sns-validator] - SNS validator without requiring SDK
 * [Guzzle Version 6][guzzle-docs] – PHP HTTP client and framework
+* For Version 2 of the SDK:
+  * [User Guide][docs-guide-v2]
+  * [API Docs][docs-api-v2]
 * Other [AWS SDKs & Tools][aws-tools] (e.g., js, cli, ruby, python, java, etc.)
 
 [sdk-website]: http://aws.amazon.com/sdkforphp
@@ -158,6 +159,7 @@ try {
 [docs-exceptions]: http://docs.aws.amazon.com/aws-sdk-php/v3/guide/quick-start.html#error-handling
 [docs-wire-logging]: http://docs.aws.amazon.com/aws-sdk-php/v3/guide/faq.html#how-can-i-see-what-data-is-sent-over-the-wire
 [docs-ddbsh]: http://docs.aws.amazon.com/aws-sdk-php/v3/guide/service/dynamodb-session-handler.html
+[docs-services]: https://aws.amazon.com/products/
 [docs-rande]: http://docs.aws.amazon.com/general/latest/gr/rande.html
 [docs-streamwrapper]: http://docs.aws.amazon.com/aws-sdk-php/v3/guide/service/s3-stream-wrapper.html
 [docs-s3-transfer]: http://docs.aws.amazon.com/aws-sdk-php/v3/guide/service/s3-transfer.html
