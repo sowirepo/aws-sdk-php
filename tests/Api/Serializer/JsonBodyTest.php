@@ -6,11 +6,12 @@ use Aws\Api\Service;
 use Aws\Api\Shape;
 use Aws\Api\ShapeMap;
 use Aws\Test\UsesServiceTrait;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers Aws\Api\Serializer\JsonBody
  */
-class JsonBodyTest extends \PHPUnit_Framework_TestCase
+class JsonBodyTest extends TestCase
 {
     use UsesServiceTrait;
 
@@ -115,6 +116,50 @@ class JsonBodyTest extends \PHPUnit_Framework_TestCase
                 ],
                 ['foo' => 1397259637],
                 '{"foo":1397259637}'
+            ],
+            // Formats nested structures, maps and lists which have no elements
+            [
+                [
+                    'type' => 'structure',
+                    'members' => [
+                        'foo' => [
+                            'type' => 'structure',
+                            'members' => [
+                                'bar' => [
+                                    'type' => 'string'
+                                ]
+                            ]
+                        ],
+                        'baz' => [
+                            'type' => 'map',
+                            'value' => ['type' => 'string']
+                        ],
+                        'foz' => [
+                            'type' => 'list',
+                            'member' => ['type' => 'string']
+                        ]
+                    ]
+                ],
+                ['foo' => [], 'baz' => [], 'foz' => []],
+                '{"foo":{},"baz":{},"foz":[]}'
+            ],
+            // Formats nested structures which have invalid elements
+            [
+                [
+                    'type' => 'structure',
+                    'members' => [
+                        'foo' => [
+                            'type' => 'structure',
+                            'members' => [
+                                'bar' => [
+                                    'type' => 'string'
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                ['foo' => ['baz' => 'is not a valid member']],
+                '{"foo":{}}'
             ],
         ];
     }

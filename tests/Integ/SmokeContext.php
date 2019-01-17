@@ -408,6 +408,14 @@ class SmokeContext extends PHPUnit_Framework_Assert implements
     }
 
     /**
+     * @Then the request should fail
+     */
+    public function theRequestShouldFail()
+    {
+        $this->assertNotEmpty($this->error);
+    }
+
+    /**
      * @Then the error message should contain:
      *
      * @param PyStringNode $string
@@ -415,5 +423,15 @@ class SmokeContext extends PHPUnit_Framework_Assert implements
     public function theErrorMessageShouldContain(PyStringNode $string)
     {
         $this->assertContains($string->getRaw(), $this->error->getMessage());
+    }
+
+    /**
+     * @Then the status code should be :statusCode
+     *
+     * @param string $statusCode
+     */
+    public function theStatusCodeShouldBe($statusCode)
+    {
+        $this->assertEquals($statusCode, $this->error->getStatusCode());
     }
 }

@@ -5,8 +5,9 @@ use Aws\Result;
 use Aws\ResultInterface;
 use Aws\S3\MultipartCopy;
 use Aws\Test\UsesServiceTrait;
+use PHPUnit\Framework\TestCase;
 
-class MultipartCopyTest extends \PHPUnit_Framework_TestCase
+class MultipartCopyTest extends TestCase
 {
     use UsesServiceTrait;
 
@@ -30,7 +31,11 @@ class MultipartCopyTest extends \PHPUnit_Framework_TestCase
         ]);
 
         if ($error) {
-            $this->setExpectedException($error);
+            if (method_exists($this, 'expectException')) {
+                $this->expectException($error);
+            } else {
+                $this->setExpectedException($error);
+            }
         }
 
         $uploader = new MultipartCopy($client, '/bucket/key', $uploadOptions);

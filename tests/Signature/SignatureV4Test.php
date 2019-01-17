@@ -8,11 +8,12 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\NoSeekStream;
 
 require_once __DIR__ . '/sig_hack.php';
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers Aws\Signature\SignatureV4
  */
-class SignatureV4Test extends \PHPUnit_Framework_TestCase
+class SignatureV4Test extends TestCase
 {
     const DEFAULT_KEY = 'AKIDEXAMPLE';
     const DEFAULT_SECRET = 'wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY';
@@ -75,19 +76,19 @@ class SignatureV4Test extends \PHPUnit_Framework_TestCase
         $request = new Request('GET', 'http://www.example.com');
         $credentials = new Credentials('fizz', 'buzz');
         $sig->signRequest($request, $credentials);
-        $this->assertEquals(1, count($this->readAttribute($sig, 'cache')));
+        $this->assertCount(1, $this->readAttribute($sig, 'cache'));
 
         $credentials = new Credentials('fizz', 'baz');
         $sig->signRequest($request, $credentials);
-        $this->assertEquals(2, count($this->readAttribute($sig, 'cache')));
+        $this->assertCount(2, $this->readAttribute($sig, 'cache'));
 
         $credentials = new Credentials('fizz', 'paz');
         $sig->signRequest($request, $credentials);
-        $this->assertEquals(3, count($this->readAttribute($sig, 'cache')));
+        $this->assertCount(3, $this->readAttribute($sig, 'cache'));
 
         $credentials = new Credentials('fizz', 'foobar');
         $sig->signRequest($request, $credentials);
-        $this->assertEquals(1, count($this->readAttribute($sig, 'cache')));
+        $this->assertCount(1, $this->readAttribute($sig, 'cache'));
     }
 
     private function getFixtures()
@@ -99,7 +100,22 @@ class SignatureV4Test extends \PHPUnit_Framework_TestCase
         return array($request, $credentials, $signature);
     }
 
-    public function testCreatesPresignedDatesFromDateTime()
+    public function getExpiresDateTimeInterfaceInputs()
+    {
+        return [
+            [
+                new \DateTime('December 11, 2013 00:00:00 UTC')
+            ],
+            [
+                new \DateTimeImmutable('December 11, 2013 00:00:00 UTC')
+            ]
+        ];
+    }
+
+    /**
+     * @dataProvider getExpiresDateTimeInterfaceInputs
+     */
+    public function testCreatesPresignedDatesFromDateTime($dateTime)
     {
         $_SERVER['override_v4_time'] = true;
         list($request, $credentials, $signature) = $this->getFixtures();
@@ -107,7 +123,7 @@ class SignatureV4Test extends \PHPUnit_Framework_TestCase
         $url = (string) $signature->presign(
             $request,
             $credentials,
-            new \DateTime('December 11, 2013 00:00:00 UTC')
+            $dateTime
         )->getUri();
         $this->assertContains('X-Amz-Expires=518400',$url);
 
@@ -140,14 +156,31 @@ class SignatureV4Test extends \PHPUnit_Framework_TestCase
         $_SERVER['override_v4_time'] = true;
         list($request, $credentials, $signature) = $this->getFixtures();
         $credentials = new Credentials('foo', 'bar', '123');
-        $url = (string) $signature->presign($request, $credentials, 1386720000)->getUri();
+        $request = $signature->presign($request, $credentials, 1386720000);
+        $this->assertEmpty($request->getHeader('X-Amz-Security-Token'));
+        $url = (string) $request->getUri();
         $this->assertContains('X-Amz-Security-Token=123', $url);
         $this->assertContains('X-Amz-Expires=518400', $url);
     }
 
-    public function testUsesStartDateFromDateTimeIfPresent()
+    public function getStartDateTimeInterfaceInputs()
     {
-        $options = ['start_time' => new \DateTime('December 5, 2013 00:00:00 UTC')];
+        return [
+            [
+                new \DateTime('December 5, 2013 00:00:00 UTC')
+            ],
+            [
+                new \DateTimeImmutable('December 5, 2013 00:00:00 UTC')
+            ]
+        ];
+    }
+
+    /**
+     * @dataProvider getStartDateTimeInterfaceInputs
+     */
+    public function testUsesStartDateFromDateTimeIfPresent($dateTime)
+    {
+        $options = ['start_time' => $dateTime];
         unset($_SERVER['aws_time']);
 
         list($request, $credentials, $signature) = $this->getFixtures();
@@ -242,6 +275,37 @@ class SignatureV4Test extends \PHPUnit_Framework_TestCase
         ]);
         $signed = $sig->signRequest($req, $creds);
         $this->assertContains('content-md5;host;x-amz-date;x-amz-foo', $signed->getHeaderLine('Authorization'));
+    }
+
+    public function testPresignSpecificHeaders()
+    {
+        $sig = new SignatureV4('foo', 'bar');
+        $creds = new Credentials('a', 'b');
+        $req = new Request('PUT', 'http://foo.com', [
+            'x-amz-date' => 'today',
+            'host' => 'foo.com',
+            'x-amz-foo' => '123',
+            'content-md5' => 'bogus',
+            'x-amz-meta-foo' => 'bar',
+            'x-amz-content-sha256' => 'abc',
+        ]);
+        $presigned = $sig->presign($req, $creds, '+5 minutes');
+        $this->assertContains(urlencode('host;x-amz-foo;content-md5;x-amz-meta-foo'), (string)$presigned->getUri());
+    }
+
+    public function testPresignBlacklistedHeaders()
+    {
+        $sig = new SignatureV4('foo', 'bar');
+        $creds = new Credentials('a', 'b');
+        $req = new Request('PUT', 'http://foo.com', [
+            'user-agent' => 'curl',
+            'content-length' => '1000',
+            'Content-Type' => 'text/html',
+        ]);
+        $presigned = $sig->presign($req, $creds, '+5 minutes');
+        $this->assertNotContains('user-agent', (string)$presigned->getUri());
+        $this->assertNotContains('content-length', (string)$presigned->getUri());
+        $this->assertNotContains('Content-Type', (string)$presigned->getUri());
     }
 
     /**

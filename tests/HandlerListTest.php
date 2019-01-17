@@ -6,11 +6,12 @@ use Aws\CommandInterface;
 use Aws\HandlerList;
 use Aws\Middleware;
 use GuzzleHttp\Psr7\Request;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers Aws\HandlerList
  */
-class HandlerListTest extends \PHPUnit_Framework_TestCase
+class HandlerListTest extends TestCase
 {
     /**
      * @expectedException \LogicException
@@ -95,7 +96,7 @@ class HandlerListTest extends \PHPUnit_Framework_TestCase
         };
         $list = new HandlerList($handler);
         $h = [];
-        $steps = ['Init', 'Validate', 'Build', 'Sign'];
+        $steps = ['Init', 'Validate', 'Build', 'Sign', 'Attempt'];
         foreach ($steps as $step) {
             $m = $this->createMiddleware($h, $step);
             $list->{'append' . $step}($m);
@@ -113,7 +114,7 @@ class HandlerListTest extends \PHPUnit_Framework_TestCase
         };
         $list = new HandlerList($handler);
         $h = [];
-        $steps = ['Init', 'Validate', 'Build', 'Sign'];
+        $steps = ['Init', 'Validate', 'Build', 'Sign', 'Attempt'];
         foreach ($steps as $step) {
             $m = $this->createMiddleware($h, $step);
             $list->{'prepend' . $step}($m);
@@ -184,6 +185,7 @@ class HandlerListTest extends \PHPUnit_Framework_TestCase
         $list->appendValidate(Middleware::tap(function () {}), 'b');
         $list->appendBuild(Middleware::tap(function () {}), 'c');
         $list->appendSign(Middleware::tap(function () {}), 'd');
+        $list->appendAttempt(Middleware::tap(function (){}), 'e');
 
         $list->interpose(function ($step, $name) use (&$res) {
             return function (callable $h) use ($step, $name, &$res) {
@@ -196,6 +198,6 @@ class HandlerListTest extends \PHPUnit_Framework_TestCase
 
         $handler = $list->resolve();
         $handler(new Command('foo'), new Request('GET', 'http://foo.com'));
-        $this->assertEquals(['init:a', 'validate:b', 'build:c', 'sign:d'], $res);
+        $this->assertEquals(['init:a', 'validate:b', 'build:c', 'sign:d', 'attempt:e'], $res);
     }
 }

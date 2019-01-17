@@ -3,11 +3,12 @@ namespace Aws\Test\Api;
 
 use Aws\Api\Service;
 use Aws\Test\UsesServiceTrait;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \Aws\Api\Service
  */
-class ServiceTest extends \PHPUnit_Framework_TestCase
+class ServiceTest extends TestCase
 {
     use UsesServiceTrait;
 
@@ -33,8 +34,9 @@ class ServiceTest extends \PHPUnit_Framework_TestCase
         $s = new Service(
             [
                 'metadata' => [
-                    'serviceFullName' => 'Foo',
+                    'serviceFullName' => 'Foo Service',
                     'serviceIdentifier' => 'foo',
+                    'serviceId'         => 'Foo',
                     'endpointPrefix'  => 'bar',
                     'apiVersion'      => 'baz',
                     'signingName'     => 'qux',
@@ -44,8 +46,9 @@ class ServiceTest extends \PHPUnit_Framework_TestCase
             ],
             function () { return []; }
         );
-        $this->assertEquals('Foo', $s->getServiceFullName());
+        $this->assertEquals('Foo Service', $s->getServiceFullName());
         $this->assertEquals('foo', $s->getServiceName());
+        $this->assertEquals('Foo', $s->getServiceId());
         $this->assertEquals('bar', $s->getEndpointPrefix());
         $this->assertEquals('baz', $s->getApiVersion());
         $this->assertEquals('qux', $s->getSigningName());
@@ -116,7 +119,11 @@ class ServiceTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(['bar' => 'baz'], $config);
 
         $this->assertFalse($api->hasWaiter('Fizz'));
-        $this->setExpectedException('UnexpectedValueException');
+        if (method_exists($this, 'expectException')) {
+            $this->expectException(\UnexpectedValueException::class);
+        } else {
+            $this->setExpectedException(\UnexpectedValueException::class);
+        }
         $api->getWaiterConfig('Fizz');
     }
 

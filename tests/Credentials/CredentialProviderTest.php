@@ -6,10 +6,12 @@ use Aws\Credentials\Credentials;
 use Aws\LruArrayCache;
 use Aws\Sts\StsClient;
 use GuzzleHttp\Promise;
+use PHPUnit\Framework\TestCase;
+
 /**
  * @covers \Aws\Credentials\CredentialProvider
  */
-class CredentialProviderTest extends \PHPUnit_Framework_TestCase
+class CredentialProviderTest extends TestCase
 {
     private $home, $homedrive, $homepath, $key, $secret, $profile;
 
@@ -117,7 +119,7 @@ class CredentialProviderTest extends \PHPUnit_Framework_TestCase
         }
 
         $this->assertEquals(1, $timesCalled);
-        $this->assertEquals(1, count($cache));
+        $this->assertCount(1, $cache);
         $this->assertEquals($creds->getAccessKeyId(), $found->getAccessKeyId());
         $this->assertEquals($creds->getSecretKey(), $found->getSecretKey());
         $this->assertEquals($creds->getSecurityToken(), $found->getSecurityToken());
@@ -145,7 +147,7 @@ class CredentialProviderTest extends \PHPUnit_Framework_TestCase
         $creds = call_user_func(CredentialProvider::env())->wait();
         $this->assertEquals('abc', $creds->getAccessKeyId());
         $this->assertEquals('123', $creds->getSecretKey());
-        $this->assertEquals(NULL, $creds->getSecurityToken());
+        $this->assertNull($creds->getSecurityToken());
     }
 
     /**
@@ -168,6 +170,7 @@ class CredentialProviderTest extends \PHPUnit_Framework_TestCase
     public function iniFileProvider()
     {
         $credentials = new Credentials('foo', 'bar', 'baz');
+        $credentialsWithEquals = new Credentials('foo', 'bar', 'baz=');
         $standardIni = <<<EOT
 [default]
 aws_access_key_id = foo
@@ -187,11 +190,25 @@ aws_secret_access_key = bar
 aws_session_token = baz
 aws_security_token = fizz
 EOT;
+        $standardWithEqualsIni = <<<EOT
+[default]
+aws_access_key_id = foo
+aws_secret_access_key = bar
+aws_session_token = baz=
+EOT;
+        $standardWithEqualsQuotedIni = <<<EOT
+[default]
+aws_access_key_id = foo
+aws_secret_access_key = bar
+aws_session_token = "baz="
+EOT;
 
         return [
             [$standardIni, $credentials],
             [$oldIni, $credentials],
             [$mixedIni, $credentials],
+            [$standardWithEqualsIni, $credentialsWithEquals],
+            [$standardWithEqualsQuotedIni, $credentialsWithEquals],
         ];
     }
 
@@ -299,13 +316,26 @@ EOT;
         $creds = new Credentials('foo', 'bar');
         $f = function () use (&$called, $creds) {
             $called++;
-            return \GuzzleHttp\Promise\promise_for($creds);
+            return Promise\promise_for($creds);
         };
         $p = CredentialProvider::memoize($f);
         $this->assertSame($creds, $p()->wait());
         $this->assertEquals(1, $called);
         $this->assertSame($creds, $p()->wait());
         $this->assertEquals(1, $called);
+    }
+
+    public function testMemoizesCleansUpOnError()
+    {
+        $called = 0;
+        $f = function () use (&$called) {
+            $called++;
+            return Promise\rejection_for('Error');
+        };
+        $p = CredentialProvider::memoize($f);
+        $p()->wait(false);
+        $p()->wait(false);
+        $this->assertEquals(2, $called);
     }
 
     public function testCallsDefaultsCreds()

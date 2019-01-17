@@ -4,6 +4,7 @@ namespace Aws\Test\Api\Serializer;
 use Aws\Api\Service;
 use Aws\AwsClient;
 use Aws\Test\UsesServiceTrait;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \Aws\Api\Serializer\QuerySerializer
@@ -16,7 +17,7 @@ use Aws\Test\UsesServiceTrait;
  * @covers \Aws\Api\Serializer\Ec2ParamBuilder
  * @covers \Aws\Api\Serializer\QueryParamBuilder
  */
-class ComplianceTest extends \PHPUnit_Framework_TestCase
+class ComplianceTest extends TestCase
 {
     use UsesServiceTrait;
 
@@ -46,7 +47,10 @@ class ComplianceTest extends \PHPUnit_Framework_TestCase
                         $description,
                         $case['given']['name'],
                         isset($case['params']) ? $case['params'] : [],
-                        $case['serialized']
+                        $case['serialized'],
+                        isset($suite['clientEndpoint'])
+                            ? $suite['clientEndpoint']
+                            : null
                     ];
                 }
             }
@@ -63,9 +67,12 @@ class ComplianceTest extends \PHPUnit_Framework_TestCase
         Service $service,
         $name,
         array $args,
-        $serialized
+        $serialized,
+        $clientEndpoint
     ) {
-        $ep = 'http://us-east-1.foo.amazonaws.com';
+        $ep = !empty($clientEndpoint)
+            ? $clientEndpoint
+            : 'http://us-east-1.foo.amazonaws.com';
         $client = new AwsClient([
             'service'      => 'foo',
             'api_provider' => function () use ($service) {
@@ -93,8 +100,8 @@ class ComplianceTest extends \PHPUnit_Framework_TestCase
             case 'json':
             case 'rest-json':
                 // Normalize the JSON data.
-                $body = str_replace(':', ': ', $request->getBody());
-                $body = str_replace(',', ', ', $body);
+                $body = str_replace(['":', ','], ['": ', ', '], $body);
+                $body = str_replace(',  ', ', ', $body);
                 break;
             case 'rest-xml':
                 // Normalize XML data.
@@ -111,6 +118,10 @@ class ComplianceTest extends \PHPUnit_Framework_TestCase
         }
 
         $this->assertEquals($serialized['body'], $body);
+
+        if (isset($serialized['host'])) {
+            $this->assertEquals($serialized['host'], $request->getUri()->getHost());
+        }
 
         if (isset($serialized['headers'])) {
             foreach ($serialized['headers'] as $key => $value) {

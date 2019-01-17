@@ -15,6 +15,9 @@ default:
         blocking:
             paths: [ %paths.base%/features/blocking ]
             contexts: [ Aws\Test\Integ\BlockingContext ]
+        clientSideMonitoring:
+            paths: [ %paths.base%/features/clientSideMonitoring ]
+            contexts: [ Aws\Test\Integ\ClientSideMonitoringContext ]
         concurrency:
             paths: [ %paths.base%/features/concurrency ]
             contexts: [ Aws\Test\Integ\ConcurrencyContext ]
@@ -24,3 +27,6 @@ default:
         s3:
             paths: [ %paths.base%/features/s3 ]
             contexts: [ Aws\Test\Integ\S3Context ]
+        s3Encryption:
+            paths: [ %paths.base%/features/s3Encryption ]
+            contexts: [ Aws\Test\Integ\S3EncryptionContext ]

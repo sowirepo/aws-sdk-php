@@ -27,7 +27,7 @@ clear-cache:
 	php build/aws-clear-cache.php
 
 test:
-	@AWS_ACCESS_KEY_ID=foo AWS_SECRET_ACCESS_KEY=bar \
+	@AWS_ACCESS_KEY_ID=foo AWS_SECRET_ACCESS_KEY=bar AWS_CSM_ENABLED=false \
 	vendor/bin/phpunit --testsuite=unit $(TEST)
 
 test-phar: package
@@ -38,7 +38,7 @@ test-phar: package
 	php -dopcache.enable_cli=1 build/phar-test-runner.php --format=progress
 
 coverage:
-	@AWS_ACCESS_KEY_ID=foo AWS_SECRET_ACCESS_KEY=bar \
+	@AWS_ACCESS_KEY_ID=foo AWS_SECRET_ACCESS_KEY=bar AWS_CSM_ENABLED=false \
 	vendor/bin/phpunit --testsuite=unit --coverage-html=build/artifacts/coverage $(TEST)
 
 coverage-show:
@@ -81,7 +81,7 @@ guide-show:
 
 api-get-apigen:
 	mkdir -p build/artifacts
-	[ -f build/artifacts/apigen.phar ] || wget -q -O build/artifacts/apigen.phar https://github.com/ApiGen/ApiGen/releases/download/v4.1.0/apigen-4.1.0.phar
+	[ -f build/artifacts/apigen.phar ] || wget -q -O build/artifacts/apigen.phar https://github.com/ApiGen/ApiGen/releases/download/v4.1.2/apigen.phar
 
 api: api-get-apigen
 	# Build the package if necessary.

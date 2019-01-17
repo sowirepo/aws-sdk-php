@@ -6,11 +6,12 @@ use Aws\Exception\AwsException;
 use Aws\Result;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers Aws\Exception\AwsException
  */
-class AwsExceptionTest extends \PHPUnit_Framework_TestCase
+class AwsExceptionTest extends TestCase
 {
     use UsesServiceTrait;
 
@@ -37,6 +38,15 @@ class AwsExceptionTest extends \PHPUnit_Framework_TestCase
         $command = new Command('foo');
         $e = new AwsException('Foo', $command, $ctx);
         $this->assertEquals(400, $e->getStatusCode());
+    }
+
+    public function testSetsMaxRetriesExceeded()
+    {
+        $command = new Command('foo');
+        $e = new AwsException('Foo', $command);
+        $this->assertFalse($e->isMaxRetriesExceeded());
+        $e->setMaxRetriesExceeded();
+        $this->assertTrue($e->isMaxRetriesExceeded());
     }
 
     public function testProvidesResult()

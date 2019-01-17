@@ -8,11 +8,12 @@ use Aws\S3\Transfer;
 use Aws\Test\UsesServiceTrait;
 use GuzzleHttp\Promise;
 use Psr\Http\Message\RequestInterface;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers Aws\S3\Transfer
  */
-class TransferTest extends \PHPUnit_Framework_TestCase
+class TransferTest extends TestCase
 {
     use UsesServiceTrait;
 
@@ -244,7 +245,7 @@ class TransferTest extends \PHPUnit_Framework_TestCase
             ->method('getCommand')
             ->with(
                 'PutObject',
-                new \PHPUnit_Framework_Constraint_Callback(function (array $args) use ($filesInDirectory) {
+                new \PHPUnit\Framework\Constraint\Callback(function (array $args) use ($filesInDirectory) {
                     return 'bare-bucket' === $args['Bucket']
                         && in_array($args['SourceFile'], $filesInDirectory)
                         && __DIR__ . '/' . $args['Key'] === $args['SourceFile'];
@@ -268,7 +269,7 @@ class TransferTest extends \PHPUnit_Framework_TestCase
             ->method('getCommand')
             ->with(
                 'PutObject',
-                new \PHPUnit_Framework_Constraint_Callback(function (array $args) {
+                new \PHPUnit\Framework\Constraint\Callback(function (array $args) {
                     return 'bucket' === $args['Bucket']
                     && $args['SourceFile'] === __FILE__
                     && __DIR__ . '/' . $args['Key'] === $args['SourceFile'];
@@ -292,7 +293,7 @@ class TransferTest extends \PHPUnit_Framework_TestCase
             ->method('getCommand')
             ->with(
                 'GetObject',
-                new \PHPUnit_Framework_Constraint_Callback(function (array $args) {
+                new \PHPUnit\Framework\Constraint\Callback(function (array $args) {
                     return 'bucket' === $args['Bucket']
                     && $args['Key'] === 'path/to/key';
                 })
