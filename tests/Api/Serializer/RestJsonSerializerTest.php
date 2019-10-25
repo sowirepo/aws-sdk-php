@@ -86,6 +86,14 @@ class RestJsonSerializerTest extends TestCase
         return $j($command);
     }
 
+    private function getPathEndpointRequest($commandName, $input)
+    {
+        $service = $this->getTestService();
+        $command = new Command($commandName, $input);
+        $j = new RestJsonSerializer($service, 'http://foo.com/bar');
+        return $j($command);
+    }
+
     public function testPreparesRequestsWithContentType()
     {
         $request = $this->getRequest('foo', ['baz' => 'bar']);
@@ -93,7 +101,19 @@ class RestJsonSerializerTest extends TestCase
         $this->assertEquals('http://foo.com/', (string) $request->getUri());
         $this->assertEquals('{"baz":"bar"}', (string) $request->getBody());
         $this->assertEquals(
-            'application/x-amz-json-1.1',
+            'application/json',
+            $request->getHeaderLine('Content-Type')
+        );
+    }
+
+    public function testPreparesRequestsWithEndpointWithPath()
+    {
+        $request = $this->getPathEndpointRequest('foo', ['baz' => 'bar']);
+        $this->assertEquals('POST', $request->getMethod());
+        $this->assertEquals('http://foo.com/bar', (string) $request->getUri());
+        $this->assertEquals('{"baz":"bar"}', (string) $request->getBody());
+        $this->assertEquals(
+            'application/json',
             $request->getHeaderLine('Content-Type')
         );
     }
@@ -156,7 +176,7 @@ class RestJsonSerializerTest extends TestCase
         $this->assertEquals('http://foo.com/', (string) $request->getUri());
         $this->assertEquals('{"baz":"1234"}', (string) $request->getBody());
         $this->assertEquals(
-            'application/x-amz-json-1.1',
+            'application/json',
             $request->getHeaderLine('Content-Type')
         );
     }

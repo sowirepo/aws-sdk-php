@@ -1,6 +1,7 @@
 <?php
 namespace Aws\Test;
 
+use Aws\Api\ApiProvider;
 use Aws\Api\ErrorParser\JsonRpcErrorParser;
 use Aws\AwsClient;
 use Aws\CommandInterface;
@@ -137,24 +138,26 @@ class AwsClientTest extends TestCase
 
     public function testCanGetIterator()
     {
-        $client = $this->getTestClient('s3');
+        $provider = ApiProvider::filesystem(__DIR__ . '/fixtures/aws_client_test');
+        $client = $this->getTestClient('ec2', ['api_provider' => $provider]);
         $this->assertInstanceOf(
             'Generator',
-            $client->getIterator('ListObjects', ['Bucket' => 'foobar'])
+            $client->getIterator('DescribePaginatedExamples')
         );
     }
 
-    public function testCanGetIteratorWithoutDefinedPaginator()
+    public function testCanGetIteratorWithoutFullyDefinedPaginator()
     {
-        $client = $this->getTestClient('ec2');
+        $provider = ApiProvider::filesystem(__DIR__ . '/fixtures/aws_client_test');
+        $client = $this->getTestClient('ec2', ['api_provider' => $provider]);
         $data = ['foo', 'bar', 'baz'];
         $this->addMockResults($client, [new Result([
-            'Subnets' => [$data],
+            'Examples' => [$data, $data],
         ])]);
-        $iterator = $client->getIterator('DescribeSubnets');
+        $iterator = $client->getIterator('DescribeExamples');
         $this->assertInstanceOf('Traversable', $iterator);
         foreach ($iterator as $iterated) {
-            $this->assertSame($data, $iterated);
+            $this->assertSame($iterated, $data);
         }
     }
 
@@ -369,6 +372,70 @@ class AwsClientTest extends TestCase
             ]
         );
         $client->bar();
+    }
+
+    public function testLoadsAliases()
+    {
+        $client = $this->createClient([
+            'metadata' => [
+                'serviceId' => 'TestService',
+                'apiVersion' => '2019-05-23'
+            ]
+        ]);
+        $ref = new \ReflectionClass(AwsClient::class);
+        $method = $ref->getMethod('loadAliases');
+        $method->setAccessible(true);
+        $property = $ref->getProperty('aliases');
+        $property->setAccessible(true);
+        $method->invokeArgs(
+            $client,
+            [__DIR__ . '/fixtures/aws_client_test/aliases.json']
+        );
+        $this->assertEquals(
+            ['GetConfigAlias' => 'GetConfig'],
+            $property->getValue($client)
+        );
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Operation not found: GetConfig
+     */
+    public function testCallsAliasedFunction()
+    {
+        $client = $this->createClient([
+            'metadata' => [
+                'serviceId' => 'TestService',
+                'apiVersion' => '2019-05-23'
+            ]
+        ]);
+        $ref = new \ReflectionClass(AwsClient::class);
+        $method = $ref->getMethod('loadAliases');
+        $method->setAccessible(true);
+        $method->invokeArgs(
+            $client,
+            [__DIR__ . '/fixtures/aws_client_test/aliases.json']
+        );
+
+        $client->getConfigAlias();
+    }
+
+    public function testVerifyGetConfig()
+    {
+        $client = $this->createClient([
+            'metadata' => [
+                'serviceId' => 'TestService',
+                'apiVersion' => '2019-05-23'
+            ]
+        ]);
+        $this->assertEquals(
+            [
+                'signature_version' => 'v4',
+                'signing_name' => 'foo',
+                'signing_region' => 'foo',
+            ],
+            $client->getConfig()
+        );
     }
 
     private function createHttpsEndpointClient(array $service = [], array $config = [])

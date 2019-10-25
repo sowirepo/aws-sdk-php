@@ -83,7 +83,13 @@ class FunctionsTest extends TestCase
     {
         $soughtData = ['foo' => 'bar'];
         $jsonPath = sys_get_temp_dir() . '/some-file-name-' . time() . '.json';
+
+        file_put_contents($jsonPath, json_encode($soughtData), LOCK_EX);
+
+        $this->assertSame($soughtData, Aws\load_compiled_json($jsonPath));
+
         file_put_contents($jsonPath, 'INVALID JSON', LOCK_EX);
+
         file_put_contents(
             "$jsonPath.php",
             '<?php return ' . var_export($soughtData, true) . ';',
@@ -91,6 +97,38 @@ class FunctionsTest extends TestCase
         );
 
         $this->assertSame($soughtData, Aws\load_compiled_json($jsonPath));
+    }
+
+    /**
+     * @covers Aws\load_compiled_json()
+     */
+    public function testOnlyLoadsCompiledJsonOnce()
+    {
+        $soughtData = ['foo' => 'bar'];
+        $jsonPath = sys_get_temp_dir() . '/some-file-name-' . time() . '.json';
+
+        file_put_contents($jsonPath, json_encode($soughtData), LOCK_EX);
+
+        $this->assertSame($soughtData, Aws\load_compiled_json($jsonPath));
+        $jsonAtime = fileatime($jsonPath);
+
+        file_put_contents($jsonPath, 'INVALID JSON', LOCK_EX);
+
+        $compiledPath = "{$jsonPath}.php";
+        file_put_contents(
+            $compiledPath,
+            '<?php return ' . var_export($soughtData, true) . ';',
+            LOCK_EX
+        );
+
+        $this->assertSame($soughtData, Aws\load_compiled_json($jsonPath));
+        $compiledAtime = fileatime($compiledPath);
+
+        sleep(1);
+        clearstatcache();
+        $this->assertSame($soughtData, Aws\load_compiled_json($jsonPath));
+        $this->assertEquals($jsonAtime, fileatime($jsonPath));
+        $this->assertEquals($compiledAtime, fileatime($compiledPath));
     }
 
     /**
@@ -332,6 +370,66 @@ class FunctionsTest extends TestCase
                 str_repeat('a', 63) . '.' . str_repeat('a', 63) . '.'
                     . str_repeat('a', 63) . '.' . str_repeat('a', 62),
                 false
+            ],
+        ];
+    }
+
+    /**
+     * @covers Aws\parse_ini_file()
+     * @dataProvider getIniFileTestCases
+     */
+    public function testParsesIniFile($ini, $expected)
+    {
+        $tmpFile = sys_get_temp_dir() . '/test.ini';
+        file_put_contents($tmpFile, $ini);
+        $this->assertEquals(
+            $expected,
+            Aws\parse_ini_file($tmpFile, true, INI_SCANNER_RAW)
+        );
+        unlink($tmpFile);
+    }
+
+    public function getIniFileTestCases()
+    {
+        return [
+            [
+                <<<EOT
+[default]
+foo_key = bar
+baz_key = qux
+[custom]
+foo_key = bar-custom
+baz_key = qux-custom
+EOT
+                ,
+                [
+                    'default' => [
+                        'foo_key' => 'bar',
+                        'baz_key' => 'qux',
+                    ],
+                    'custom' => [
+                        'foo_key' => 'bar-custom',
+                        'baz_key' => 'qux-custom',
+                    ]
+                ]
+            ],
+            [
+                <<<EOT
+[default]
+;Full-line comment = ignored
+#Full-line comment = ignored
+foo_key = bar;Inline comment = ignored
+baz_key = qux
+*star_key = not_ignored
+EOT
+                ,
+                [
+                    'default' => [
+                        'foo_key' => 'bar',
+                        'baz_key' => 'qux',
+                        '*star_key' => 'not_ignored'
+                    ],
+                ],
             ],
         ];
     }

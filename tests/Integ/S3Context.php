@@ -1,7 +1,6 @@
 <?php
 namespace Aws\Test\Integ;
 
-use Behat\Behat\Tester\Exception\PendingException;
 use Behat\Behat\Context\Context;
 use Behat\Behat\Context\SnippetAcceptingContext;
 use Behat\Gherkin\Node\PyStringNode;
@@ -13,7 +12,6 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Psr7;
 use PHPUnit_Framework_Assert as Assert;
 use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
 class S3Context implements Context, SnippetAcceptingContext
@@ -85,7 +83,26 @@ class S3Context implements Context, SnippetAcceptingContext
     public static function deleteTestBucket()
     {
         $client = self::getSdk()->createS3();
+        $result = $client->listObjectsV2([
+            'Bucket' => self::getResourceName()
+        ]);
+
+        // Delete objects & wait until no longer available before deleting bucket
         $client->deleteMatchingObjects(self::getResourceName(), '', '//');
+        if (!empty($result['Contents']) && is_array($result['Contents'])) {
+            foreach ($result['Contents'] as $object) {
+                $client->waitUntil('ObjectNotExists', [
+                    'Bucket' => self::getResourceName(),
+                    'Key' => $object['Key'],
+                    '@waiter' => [
+                        'maxAttempts' => 60,
+                        'delay' => 10,
+                    ],
+                ]);
+            }
+        }
+
+        // Delete bucket and wait until bucket is no longer available
         $client->deleteBucket(['Bucket' => self::getResourceName()]);
         $client->waitUntil('BucketNotExists', [
             'Bucket' => self::getResourceName(),

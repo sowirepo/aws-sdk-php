@@ -14,6 +14,11 @@ your [issues][] or [pull requests][pull-requests] through GitHub.
    The [PHP CS Fixer][cs-fixer] tool can be helpful for formatting your code.
 1. We maintain a high percentage of code coverage in our unit tests. If you make
    changes to the code, please add, update, and/or remove tests as appropriate.
+1. Static code analysis with [PHPStan][phpstan] is automatically run on the `src` 
+   directory for submitted pull requests. If there is a case that needs to be
+   ignored by static analysis, please update the `ignoreErrors` section in the
+   `phpstan.neon` config file in your PR, and point out why this case warrants
+   ignoring.
 1. We may choose not to accept pull requests that change files in the `src/data`
    directory, since we generate these files based on our internal knowledge of
    the AWS services. Please check in with us ahead of time if you find a mistake
@@ -56,7 +61,9 @@ outward impact, or updates to the SDK foundations. This will result in a minor
 version change.
 * `enhancement` - For minor additive features or incremental sized changes.
 This will result in a patch version change.
-* `bugfix` - For updates to guides and documentation files only. This will
+* `bugfix` - For minor changes that resolve an issue. This will result in a
+patch version change.
+* `documentation` - For updates to guides and documentation files only. This will
 result in a patch version change.
 
 #### Changelog Categories
@@ -71,6 +78,7 @@ category field should exist with the value set to an empty string `""`.
 [cla]: https://github.com/aws/aws-cla/blob/master/amazon-single-contribution-license.txt
 [php-fig]: http://php-fig.org
 [cs-fixer]: http://cs.sensiolabs.org/
+[phpstan]: https://github.com/phpstan/phpstan
 [sphinx]: http://sphinx-doc.org/
 [restructuredtext]: http://sphinx-doc.org/rest.html
 [docs-readme]: https://github.com/aws/aws-sdk-php/blob/master/docs/README.md

@@ -193,6 +193,28 @@ class PartitionEndpointProviderTest extends TestCase
         $this->assertNull($unknownPartition);
     }
 
+    public function testPassesOptionsToProvider()
+    {
+        $data = json_decode(
+            file_get_contents(__DIR__ . '/fixtures/sts_regional_endpoints.json'),
+            true
+        );
+        $provider = new PartitionEndpointProvider(
+            $data['partitions'],
+            'aws',
+            ['sts_regional_endpoints' => 'regional']
+        );
+        $endpoint = $provider([
+            'service' => 'sts',
+            'region' => 'us-east-1',
+        ]);
+
+        $this->assertEquals(
+            'https://sts.us-east-1.amazonaws.com',
+            $endpoint['endpoint']
+        );
+    }
+
     /**
      * @dataProvider knownEndpointProvider
      *
@@ -543,7 +565,6 @@ class PartitionEndpointProviderTest extends TestCase
             [$partitions, 'us-east-1', 'support', 'support.us-east-1.amazonaws.com'],
             [$partitions, 'us-east-1', 'swf', 'swf.us-east-1.amazonaws.com'],
             [$partitions, 'us-east-1', 'workspaces', 'workspaces.us-east-1.amazonaws.com'],
-            [$partitions, 'us-east-1', 'waf', 'waf.amazonaws.com'],
             [$partitions, 'us-gov-west-1', 'autoscaling', 'autoscaling.us-gov-west-1.amazonaws.com'],
             [$partitions, 'us-gov-west-1', 'cloudformation', 'cloudformation.us-gov-west-1.amazonaws.com'],
             [$partitions, 'us-gov-west-1', 'cloudhsm', 'cloudhsm.us-gov-west-1.amazonaws.com'],
