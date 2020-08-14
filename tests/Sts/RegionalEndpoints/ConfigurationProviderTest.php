@@ -24,6 +24,13 @@ sts_regional_endpoints = regional
 sts_regional_endpoints = legacy
 EOT;
 
+    private $altIniFile = <<<EOT
+[custom]
+sts_regional_endpoints = legacy
+[default]
+sts_regional_endpoints = regional
+EOT;
+
     public static function setUpBeforeClass()
     {
         self::$originalEnv = [
@@ -36,6 +43,7 @@ EOT;
     private function clearEnv()
     {
         putenv(ConfigurationProvider::ENV_ENDPOINTS_TYPE . '=');
+        putenv(ConfigurationProvider::ENV_CONFIG_FILE . '=');
 
         $dir = sys_get_temp_dir() . '/.aws';
 
@@ -92,6 +100,34 @@ EOT;
         $this->assertSame($expected->toArray(), $result->toArray());
     }
 
+    public function testUsesIniWithUseAwsConfigFileTrue()
+    {
+        $dir = $this->clearEnv();
+        $expected = new Configuration('regional');
+        file_put_contents($dir . '/config', $this->altIniFile);
+        putenv('HOME=' . dirname($dir));
+        /** @var ConfigurationInterface $result */
+        $result = call_user_func(
+            ConfigurationProvider::defaultProvider(['use_aws_shared_config_files' => true])
+        )->wait();
+        $this->assertSame($expected->toArray(), $result->toArray());
+        unlink($dir . '/config');
+    }
+
+    public function testIgnoresIniWithUseAwsConfigFileFalse()
+    {
+        $dir = $this->clearEnv();
+        $expected = new Configuration('legacy');
+        file_put_contents($dir . '/config', $this->iniFile);
+        putenv('HOME=' . dirname($dir));
+        /** @var ConfigurationInterface $result */
+        $result = call_user_func(ConfigurationProvider::defaultProvider(
+            ['use_aws_shared_config_files' => false])
+        )->wait();
+        $this->assertSame($expected->toArray(), $result->toArray());
+        unlink($dir . '/config');
+    }
+
     public function testCreatesFromIniFileWithDefaultProfile()
     {
         $dir = $this->clearEnv();
@@ -102,6 +138,21 @@ EOT;
         $result = call_user_func(ConfigurationProvider::ini(null, null))->wait();
         $this->assertSame($expected->toArray(), $result->toArray());
         unlink($dir . '/config');
+    }
+
+    public function testCreatesFromIniFileWithDifferentDefaultFilename()
+    {
+        $dir = $this->clearEnv();
+        putenv(ConfigurationProvider::ENV_CONFIG_FILE . '=' . $dir . "/alt_config");
+        $expected  = new Configuration('regional');
+        file_put_contents($dir . '/config', $this->iniFile);
+        file_put_contents($dir . '/alt_config', $this->altIniFile);
+        putenv('HOME=' . dirname($dir));
+        /** @var ConfigurationInterface $result */
+        $result = call_user_func(ConfigurationProvider::ini(null, null))->wait();
+        $this->assertSame($expected->toArray(), $result->toArray());
+        unlink($dir . '/config');
+        unlink($dir . '/alt_config');
     }
 
     public function testCreatesFromIniFileWithSpecifiedProfile()
@@ -297,7 +348,7 @@ EOT;
         $cache = $cacheBuilder->getMock();
         $cache->expects($this->any())
             ->method('get')
-            ->with(ConfigurationProvider::CACHE_KEY)
+            ->with(ConfigurationProvider::$cacheKey)
             ->willReturn($expected);
 
         $provider = ConfigurationProvider::defaultProvider(['sts_regional_endpoints' => $cache]);

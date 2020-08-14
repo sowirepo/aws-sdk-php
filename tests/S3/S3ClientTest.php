@@ -2,10 +2,16 @@
 namespace Aws\Test\S3;
 
 use Aws\Command;
+use Aws\CommandInterface;
 use Aws\Exception\AwsException;
+use Aws\LruArrayCache;
+use Aws\Endpoint\PartitionEndpointProvider;
+use Aws\Middleware;
 use Aws\Result;
 use Aws\S3\Exception\S3Exception;
+use Aws\S3\RegionalEndpoint\Configuration;
 use Aws\S3\S3Client;
+use Aws\S3\UseArnRegion\Configuration as UseArnRegionConfiguration;
 use Aws\Test\UsesServiceTrait;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
@@ -14,6 +20,7 @@ use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7;
 use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\RequestInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -77,6 +84,27 @@ class S3ClientTest extends TestCase
         $command = $client->getCommand('GetObject', ['Bucket' => 'foo', 'Key' => 'bar']);
         $url = (string) $client->createPresignedRequest($command, 1342138769)->getUri();
         $this->assertStringStartsWith('https://foo.s3.amazonaws.com/bar?', $url);
+        $this->assertContains('X-Amz-Expires=', $url);
+        $this->assertContains('X-Amz-Credential=', $url);
+        $this->assertContains('X-Amz-Signature=', $url);
+    }
+
+    public function testCreatesPresignedRequestsWithAccessPointArn()
+    {
+        /** @var S3Client $client */
+        $client = $this->getTestClient('S3', [
+            'region'      => 'us-east-1',
+            'credentials' => ['key' => 'foo', 'secret' => 'bar']
+        ]);
+        $command = $client->getCommand(
+            'GetObject',
+            [
+                'Bucket' => 'arn:aws:s3:us-east-1:123456789012:accesspoint:myendpoint',
+                'Key' => 'bar'
+            ]
+        );
+        $url = (string) $client->createPresignedRequest($command, 1342138769)->getUri();
+        $this->assertStringStartsWith('https://myendpoint-123456789012.s3-accesspoint.us-east-1.amazonaws.com/bar?', $url);
         $this->assertContains('X-Amz-Expires=', $url);
         $this->assertContains('X-Amz-Credential=', $url);
         $this->assertContains('X-Amz-Signature=', $url);
@@ -462,13 +490,18 @@ class S3ClientTest extends TestCase
         ]);
     }
 
-    public function testRetriesConnectionErrors()
+    /**
+     * @dataProvider clientRetrySettingsProvider
+     *
+     * @param array $retrySettings
+     */
+    public function testRetriesConnectionErrors($retrySettings)
     {
-        $retries = 11;
+        $retries = $retrySettings['max_attempts'] - 1;
         $client = new S3Client([
             'version' => 'latest',
             'region' => 'us-west-2',
-            'retries' => $retries,
+            'retries' => $retrySettings,
             'http_handler' => function () use (&$retries) {
                 if (0 === --$retries) {
                     return new FulfilledPromise(new Response);
@@ -491,23 +524,49 @@ class S3ClientTest extends TestCase
         $this->assertEquals(0, $retries);
     }
 
+    public function clientRetrySettingsProvider()
+    {
+        return [
+            [
+                [
+                    'mode' => 'legacy',
+                    'max_attempts' => 11,
+                ],
+            ],
+            [
+                [
+                    'mode' => 'standard',
+                    'max_attempts' => 11,
+                ],
+            ],
+            [
+                [
+                    'mode' => 'adaptive',
+                    'max_attempts' => 11,
+                ],
+            ],
+        ];
+    }
+
     /**
      * @dataProvider successErrorResponseProvider
      *
      * @param Response $failingSuccess
      * @param string   $operation
      * @param array    $payload
+     * @param array    $retryOptions
      */
     public function testRetries200Errors(
         Response $failingSuccess,
         $operation,
-        array $payload
+        array $payload,
+        $retryOptions
     ) {
-        $retries = 11;
+        $retries = $retryOptions['max_attempts'];
         $client = new S3Client([
             'version' => 'latest',
             'region' => 'us-west-2',
-            'retries' => $retries,
+            'retries' => $retryOptions,
             'http_handler' => function () use (&$retries, $failingSuccess) {
                 if (0 === --$retries) {
                     return new FulfilledPromise(new Response(
@@ -537,6 +596,36 @@ class S3ClientTest extends TestCase
                     'Key' => 'bar',
                     'CopySource' => 'baz',
                 ],
+                [
+                    'mode' => 'legacy',
+                    'max_attempts' => 11
+                ],
+            ],
+            [
+                new Response(200, [], $this->getErrorXml()),
+                'copyObject',
+                [
+                    'Bucket' => 'foo',
+                    'Key' => 'bar',
+                    'CopySource' => 'baz',
+                ],
+                [
+                    'mode' => 'standard',
+                    'max_attempts' => 11
+                ],
+            ],
+            [
+                new Response(200, [], $this->getErrorXml()),
+                'copyObject',
+                [
+                    'Bucket' => 'foo',
+                    'Key' => 'bar',
+                    'CopySource' => 'baz',
+                ],
+                [
+                    'mode' => 'adaptive',
+                    'max_attempts' => 11
+                ],
             ],
             [
                 new Response(200, [], $this->getErrorXml()),
@@ -548,6 +637,40 @@ class S3ClientTest extends TestCase
                     'Key' => 'bar',
                     'CopySource' => 'baz',
                 ],
+                [
+                    'mode' => 'legacy',
+                    'max_attempts' => 11
+                ],
+            ],
+            [
+                new Response(200, [], $this->getErrorXml()),
+                'uploadPartCopy',
+                [
+                    'PartNumber' => 1,
+                    'UploadId' => PHP_INT_SIZE,
+                    'Bucket' => 'foo',
+                    'Key' => 'bar',
+                    'CopySource' => 'baz',
+                ],
+                [
+                    'mode' => 'standard',
+                    'max_attempts' => 11
+                ],
+            ],
+            [
+                new Response(200, [], $this->getErrorXml()),
+                'uploadPartCopy',
+                [
+                    'PartNumber' => 1,
+                    'UploadId' => PHP_INT_SIZE,
+                    'Bucket' => 'foo',
+                    'Key' => 'bar',
+                    'CopySource' => 'baz',
+                ],
+                [
+                    'mode' => 'adaptive',
+                    'max_attempts' => 11
+                ],
             ],
             [
                 new Response(200, [], $this->getErrorXml()),
@@ -557,12 +680,68 @@ class S3ClientTest extends TestCase
                     'Bucket' => 'foo',
                     'Key' => 'bar',
                 ],
+                [
+                    'mode' => 'legacy',
+                    'max_attempts' => 11
+                ],
+            ],
+            [
+                new Response(200, [], $this->getErrorXml()),
+                'completeMultipartUpload',
+                [
+                    'UploadId' => PHP_INT_SIZE,
+                    'Bucket' => 'foo',
+                    'Key' => 'bar',
+                ],
+                [
+                    'mode' => 'standard',
+                    'max_attempts' => 11
+                ],
+            ],
+            [
+                new Response(200, [], $this->getErrorXml()),
+                'completeMultipartUpload',
+                [
+                    'UploadId' => PHP_INT_SIZE,
+                    'Bucket' => 'foo',
+                    'Key' => 'bar',
+                ],
+                [
+                    'mode' => 'adaptive',
+                    'max_attempts' => 11
+                ],
             ],
             [
                 new Response(200, [], $this->getMalformedXml()),
                 'listObjects',
                 [
                     'Bucket' => 'foo',
+                ],
+                [
+                    'mode' => 'legacy',
+                    'max_attempts' => 11
+                ],
+            ],
+            [
+                new Response(200, [], $this->getMalformedXml()),
+                'listObjects',
+                [
+                    'Bucket' => 'foo',
+                ],
+                [
+                    'mode' => 'standard',
+                    'max_attempts' => 11
+                ],
+            ],
+            [
+                new Response(200, [], $this->getMalformedXml()),
+                'listObjects',
+                [
+                    'Bucket' => 'foo',
+                ],
+                [
+                    'mode' => 'adaptive',
+                    'max_attempts' => 11
                 ],
             ],
         ];
@@ -606,16 +785,19 @@ EOXML;
     }
 
     /**
+     * @dataProvider clientRetrySettingsProvider
+     *
+     * @param array $retrySettings
+     *
      * @expectedException \Aws\S3\Exception\S3Exception
      * @expectedExceptionMessageRegExp /Your socket connection to the server/
      */
-    public function testClientSocketTimeoutErrorsAreNotRetriedIndefinitely()
+    public function testClientSocketTimeoutErrorsAreNotRetriedIndefinitely($retrySettings)
     {
-        $retries = 11;
         $client = new S3Client([
             'version' => 'latest',
             'region' => 'us-west-2',
-            'retries' => $retries,
+            'retries' => $retrySettings,
             'http_handler' => function () {
                 return new RejectedPromise([
                     'connection_error' => false,
@@ -647,18 +829,23 @@ EOXML;
 EOXML;
     }
 
-    public function testNetworkingErrorsAreRetriedOnIdempotentCommands()
+    /**
+     * @dataProvider clientRetrySettingsProvider
+     *
+     * @param array $retrySettings
+     */
+    public function testNetworkingErrorsAreRetriedOnIdempotentCommands($retrySettings)
     {
         $networkingError = $this->getMockBuilder(RequestException::class)
             ->disableOriginalConstructor()
             ->setMethods([])
             ->getMock();
 
-        $retries = 11;
+        $retries = $retrySettings['max_attempts'] - 1;
         $client = new S3Client([
             'version' => 'latest',
             'region' => 'us-west-2',
-            'retries' => $retries,
+            'retries' => $retrySettings,
             'http_handler' => function () use (&$retries, $networkingError) {
                 if (0 === --$retries) {
                     return new FulfilledPromise(new Response);
@@ -681,21 +868,25 @@ EOXML;
     }
 
     /**
+     * @dataProvider clientRetrySettingsProvider
+     *
+     * @param array $retrySettings
+     *
      * @expectedException \Aws\S3\Exception\S3Exception
      * @expectedExceptionMessageRegExp /CompleteMultipartUpload/
      */
-    public function testNetworkingErrorsAreNotRetriedOnNonIdempotentCommands()
+    public function testNetworkingErrorsAreNotRetriedOnNonIdempotentCommands($retrySettings)
     {
         $networkingError = $this->getMockBuilder(RequestException::class)
             ->disableOriginalConstructor()
             ->setMethods([])
             ->getMock();
 
-        $retries = 11;
+        $retries = $retrySettings['max_attempts'];
         $client = new S3Client([
             'version' => 'latest',
             'region' => 'us-west-2',
-            'retries' => $retries,
+            'retries' => $retrySettings,
             'http_handler' => function () use (&$retries, $networkingError) {
                 if (0 === --$retries) {
                     return new FulfilledPromise(new Response);
@@ -718,18 +909,23 @@ EOXML;
         $this->assertEquals(0, $retries);
     }
 
-    public function testErrorsWithUnparseableBodiesCanBeRetried()
+    /**
+     * @dataProvider clientRetrySettingsProvider
+     *
+     * @param array $retrySettings
+     */
+    public function testErrorsWithUnparseableBodiesCanBeRetried($retrySettings)
     {
         $networkingError = $this->getMockBuilder(RequestException::class)
             ->disableOriginalConstructor()
             ->setMethods([])
             ->getMock();
 
-        $retries = 11;
+        $retries = $retrySettings['max_attempts'];
         $client = new S3Client([
             'version' => 'latest',
             'region' => 'us-west-2',
-            'retries' => $retries,
+            'retries' => $retrySettings,
             'http_handler' => function () use (&$retries, $networkingError) {
                 if (0 === --$retries) {
                     return new FulfilledPromise(new Response);
@@ -1187,5 +1383,278 @@ EOXML;
             '@use_dual_stack_endpoint' => true,
             '@use_path_style_endpoint' => true,
         ]);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Invalid configuration value provided for "use_arn_region"
+     */
+    public function testAddsUseArnRegionArgument()
+    {
+        new S3Client([
+            'region' => 'us-east-1',
+            'version' => 'latest',
+            'use_arn_region' => 'trigger exception'
+        ]);
+    }
+
+    public function testAddsUseArnRegionCacheArgument()
+    {
+        // Create cache object
+        $cache = new LruArrayCache();
+        $cache->set('aws_s3_use_arn_region_config', new UseArnRegionConfiguration(true));
+
+        // Create client using cached use_arn_region config
+        $client = new S3Client([
+            'region' => 'us-east-1',
+            'version' => 'latest',
+            'use_arn_region' => $cache,
+            'handler' => function (CommandInterface $cmd, RequestInterface $req) {
+                $this->assertEquals(
+                    'myendpoint-123456789012.s3-accesspoint.us-west-2.amazonaws.com',
+                    $req->getUri()->getHost()
+                );
+                $this->assertEquals(
+                    '/Bar/Baz',
+                    $req->getUri()->getPath()
+                );
+                return new Result([]);
+            },
+        ]);
+
+        $command = $client->getCommand(
+            'GetObject',
+            [
+                'Bucket' => 'arn:aws:s3:us-west-2:123456789012:accesspoint:myendpoint',
+                'Key' => 'Bar/Baz',
+            ]
+        );
+        $client->execute($command);
+    }
+
+    public function testCopyOperationCorrectlyPopulates()
+    {
+        $client = new S3Client([
+            'region' => 'us-west-2',
+            'version' => 'latest',
+            'handler' => function (CommandInterface $cmd, RequestInterface $req) {
+                $this->assertEquals(
+                    'myendpoint-123456789012.s3-accesspoint.us-west-2.amazonaws.com',
+                    $req->getUri()->getHost()
+                );
+                $this->assertEquals(
+                    '/copied-object',
+                    $req->getUri()->getPath()
+                );
+                $this->assertEquals(
+                    'arn:aws:s3:us-west-2:1234567890123:accesspoint:my-my/finks-object',
+                    $req->getHeader('x-amz-copy-source')[0]
+                );
+                return new Result([]);
+            },
+        ]);
+
+        $command = $client->getCommand(
+            'CopyObject',
+            [
+                'Bucket' => 'arn:aws:s3:us-west-2:123456789012:accesspoint:myendpoint',
+                'Key' => 'copied-object',
+                'CopySource' => 'arn:aws:s3:us-west-2:1234567890123:accesspoint:my-my/finks-object'
+            ]
+        );
+        $client->execute($command);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Configuration parameter must either be 'legacy' or 'regional'.
+     */
+    public function testAddsS3RegionalEndpointArgument()
+    {
+        new S3Client([
+            'region' => 'us-east-1',
+            'version' => 'latest',
+            's3_us_east_1_regional_endpoint' => 'trigger_exception'
+        ]);
+    }
+
+    public function testAddsS3RegionalEndpointsCacheArgument()
+    {
+        // Create cache object
+        $cache = new LruArrayCache();
+        $cache->set('aws_s3_us_east_1_regional_endpoint_config', new Configuration('regional'));
+        // Create client using cached endpoints config
+        $client = new S3Client([
+            'region' => 'us-east-1',
+            'version' => 'latest',
+            's3_us_east_1_regional_endpoint' => $cache
+        ]);
+        // Get the expected Uri from the PartitionEndpointProvider
+        $provider = PartitionEndpointProvider::defaultProvider([
+            's3_us_east_1_regional_endpoint' => 'regional'
+        ]);
+        $endpoint = $provider([
+            'service' => 's3',
+            'region' => 'us-east-1',
+        ]);
+        $uri = new Uri($endpoint['endpoint']);
+        $this->assertEquals($uri->getHost(), $client->getEndpoint()->getHost());
+    }
+
+    /**
+     * Tests that S3 client configuration options lead to correct endpoints
+     *
+     * @dataProvider optionsToEndpointsCases
+     * @param $options
+     * @param $host
+     */
+    public function testResolvesOptionsToProperEndpoints($options, $host)
+    {
+        $client = new S3Client($options);
+        $client->getHandlerList()->appendSign(
+            Middleware::tap(function ($cmd, $req) use ($host) {
+                $this->assertEquals($host, $req->getUri()->getHost());
+            })
+        );
+        $client->listBuckets();
+    }
+
+    public function optionsToEndpointsCases()
+    {
+        $handler = function ($cmd, $req) {
+            return Promise\promise_for(new Result([]));
+        };
+        $data = json_decode(
+            file_get_contents(__DIR__ . '/../Endpoint/fixtures/s3_us_east_1_regional_endpoint.json'),
+            true
+        );
+        $regionalProvider = new PartitionEndpointProvider(
+            $data['partitions'],
+            'aws',
+            [
+                's3_us_east_1_regional_endpoint' => 'regional',
+            ]
+        );
+        $legacyProvider = new PartitionEndpointProvider(
+            $data['partitions'],
+            'aws',
+            [
+                's3_us_east_1_regional_endpoint' => 'legacy',
+            ]
+        );
+
+        return [
+            [
+                [
+                    'region' => 'us-east-1',
+                    'version' => 'latest',
+                    'handler' => $handler,
+                    'endpoint_provider' => $legacyProvider,
+                ],
+                's3.amazonaws.com'
+            ],
+            [
+                [
+                    'region' => 'us-east-1',
+                    'version' => 'latest',
+                    'handler' => $handler,
+                    'endpoint_provider' => $regionalProvider,
+                ],
+                's3.us-east-1.amazonaws.com'
+            ],
+            [
+                [
+                    'region' => 'us-west-2',
+                    'version' => 'latest',
+                    'handler' => $handler,
+                    'endpoint_provider' => $legacyProvider,
+                ],
+                's3.us-west-2.amazonaws.com'
+            ],
+            [
+                [
+                    'region' => 'us-west-2',
+                    'version' => 'latest',
+                    'handler' => $handler,
+                    'endpoint_provider' => $regionalProvider,
+                ],
+                's3.us-west-2.amazonaws.com'
+            ],
+            [
+                [
+                    'region' => 'us-east-1',
+                    'version' => 'latest',
+                    'handler' => $handler,
+                    'endpoint_provider' => $legacyProvider,
+                    'use_dual_stack_endpoint' => true,
+                ],
+                's3.dualstack.us-east-1.amazonaws.com'
+            ],
+            [
+                [
+                    'region' => 'us-east-1',
+                    'version' => 'latest',
+                    'handler' => $handler,
+                    'endpoint_provider' => $regionalProvider,
+                    'use_dual_stack_endpoint' => true,
+                ],
+                's3.dualstack.us-east-1.amazonaws.com'
+            ],
+        ];
+    }
+
+    /**
+     * @expectedException \Aws\S3\Exception\S3Exception
+     * @expectedExceptionMessage An error connecting to the service occurred while performing the CopyObject operation
+     */
+    public function testAppliesAmbiguousSuccessParsing()
+    {
+        $httpHandler = function ($request, array $options) {
+            return Promise\promise_for(
+                new Psr7\Response(200, [], "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n\n")
+            );
+        };
+
+        $s3 = new S3Client([
+            'version'     => 'latest',
+            'region'      => 'us-east-1',
+            'http_handler' => $httpHandler
+        ]);
+
+        $s3->copyObject([
+            'Bucket' => 'test-dest',
+            'Key' => 'test-key',
+            'CopySource' => 'test-source/key'
+        ]);
+    }
+
+    public function testRetriesAmbiguousSuccesses()
+    {
+        $counter = 0;
+        $httpHandler = function ($request, array $options) use (&$counter) {
+            if ($counter < 2) {
+                $body = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n\n";
+            } else {
+                $body = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><OperationNameResponse><UploadId>baz</UploadId></OperationNameResponse>";
+            }
+            $counter++;
+
+            return Promise\promise_for(
+                new Psr7\Response(200, [], $body)
+            );
+        };
+
+        $s3 = new S3Client([
+            'version'     => 'latest',
+            'region'      => 'us-east-1',
+            'http_handler' => $httpHandler
+        ]);
+        $s3->copyObject([
+            'Bucket' => 'test-dest',
+            'Key' => 'test-key',
+            'CopySource' => 'test-source/key'
+        ]);
+
+        $this->assertEquals(3, $counter);
     }
 }

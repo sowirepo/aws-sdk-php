@@ -33,6 +33,19 @@ csm_client_id = CustomIniApp
 csm_enabled = true
 EOT;
 
+    private $altIniFile = <<<EOT
+[aws_csm]
+csm_enabled = false
+csm_host = 987.6.5.4
+csm_port = 888
+csm_client_id = AltIniApp
+[custom]
+csm_enabled = true
+csm_host = 192.168.5.5
+csm_port = 999
+csm_client_id = CustomAltIniApp
+EOT;
+
     public static function setUpBeforeClass()
     {
         self::$originalEnv = [
@@ -51,6 +64,7 @@ EOT;
         putenv(ConfigurationProvider::ENV_PORT . '=');
         putenv(ConfigurationProvider::ENV_CLIENT_ID . '=');
         putenv(ConfigurationProvider::ENV_PROFILE . '=');
+        putenv(ConfigurationProvider::ENV_CONFIG_FILE . '=');
 
         $dir = sys_get_temp_dir() . '/.aws';
 
@@ -129,6 +143,40 @@ EOT;
         $this->assertSame($expected->toArray(), $result->toArray());
     }
 
+    public function testUsesIniWithUseAwsConfigFileTrue()
+    {
+        $dir = $this->clearEnv();
+        $expected = new Configuration(true, '123.4.5.6', 555, 'DefaultIniApp');
+        file_put_contents($dir . '/config', $this->iniFile);
+        putenv(ConfigurationProvider::ENV_ENABLED);
+        putenv('HOME=' . dirname($dir));
+        /** @var ConfigurationInterface $result */
+        $result = call_user_func(
+            ConfigurationProvider::defaultProvider(['use_aws_shared_config_files' => true])
+        )->wait();
+        $this->assertSame($expected->toArray(), $result->toArray());
+        unlink($dir . '/config');
+    }
+
+    public function testIgnoresIniWithUseAwsConfigFileFalse()
+    {
+        $dir = $this->clearEnv();
+        $expected = new Configuration(
+            false,
+            ConfigurationProvider::DEFAULT_HOST,
+            ConfigurationProvider::DEFAULT_PORT,
+            ''
+        );
+        file_put_contents($dir . '/config', $this->altIniFile);
+        putenv('HOME=' . dirname($dir));
+        /** @var ConfigurationInterface $result */
+        $result = call_user_func(
+            ConfigurationProvider::defaultProvider(['use_aws_shared_config_files' => false])
+        )->wait();
+        $this->assertEquals($expected->toArray(), $result->toArray());
+        unlink($dir . '/config');
+    }
+
     public function testCreatesFromIniFileWithDefaultProfile()
     {
         $dir = $this->clearEnv();
@@ -139,6 +187,21 @@ EOT;
         $result = call_user_func(ConfigurationProvider::ini())->wait();
         $this->assertSame($expected->toArray(), $result->toArray());
         unlink($dir . '/config');
+    }
+
+    public function testCreatesFromIniFileWithDifferentDefaultFilename()
+    {
+        $dir = $this->clearEnv();
+        putenv(ConfigurationProvider::ENV_CONFIG_FILE . '=' . $dir . "/alt_config");
+        $expected  = new Configuration(false, '987.6.5.4', 888, 'AltIniApp');
+        file_put_contents($dir . '/config', $this->iniFile);
+        file_put_contents($dir . '/alt_config', $this->altIniFile);
+        putenv('HOME=' . dirname($dir));
+        /** @var ConfigurationInterface $result */
+        $result = call_user_func(ConfigurationProvider::ini(null, null))->wait();
+        $this->assertSame($expected->toArray(), $result->toArray());
+        unlink($dir . '/config');
+        unlink($dir . '/alt_config');
     }
 
     public function testCreatesFromIniFileWithSpecifiedProfile()
@@ -364,7 +427,7 @@ EOT;
         $cache = $cacheBuilder->getMock();
         $cache->expects($this->any())
             ->method('get')
-            ->with(ConfigurationProvider::CACHE_KEY)
+            ->with(ConfigurationProvider::$cacheKey)
             ->willReturn($expected);
 
         $provider = ConfigurationProvider::defaultProvider(['csm' => $cache]);

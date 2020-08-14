@@ -2868,7 +2868,8 @@
         "TLSv1",
         "TLSv1_2016",
         "TLSv1.1_2016",
-        "TLSv1.2_2018"
+        "TLSv1.2_2018",
+        "TLSv1.2_2019"
       ]
     },
     "MissingBody":{
@@ -2963,7 +2964,9 @@
         "OriginPath":{"shape":"string"},
         "CustomHeaders":{"shape":"CustomHeaders"},
         "S3OriginConfig":{"shape":"S3OriginConfig"},
-        "CustomOriginConfig":{"shape":"CustomOriginConfig"}
+        "CustomOriginConfig":{"shape":"CustomOriginConfig"},
+        "ConnectionAttempts":{"shape":"integer"},
+        "ConnectionTimeout":{"shape":"integer"}
       }
     },
     "OriginCustomHeader":{

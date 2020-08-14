@@ -25,9 +25,9 @@
     "AdMarkers" : {
       "base" : null,
       "refs" : {
-        "HlsManifest$AdMarkers" : "This setting controls how ad markers are included in the packaged OriginEndpoint.\n\"NONE\" will omit all SCTE-35 ad markers from the output.\n\"PASSTHROUGH\" causes the manifest to contain a copy of the SCTE-35 ad\nmarkers (comments) taken directly from the input HTTP Live Streaming (HLS) manifest.\n\"SCTE35_ENHANCED\" generates ad markers and blackout tags based on SCTE-35\nmessages in the input source.\n",
-        "HlsManifestCreateOrUpdateParameters$AdMarkers" : "This setting controls how ad markers are included in the packaged OriginEndpoint.\n\"NONE\" will omit all SCTE-35 ad markers from the output.\n\"PASSTHROUGH\" causes the manifest to contain a copy of the SCTE-35 ad\nmarkers (comments) taken directly from the input HTTP Live Streaming (HLS) manifest.\n\"SCTE35_ENHANCED\" generates ad markers and blackout tags based on SCTE-35\nmessages in the input source.\n",
-        "HlsPackage$AdMarkers" : "This setting controls how ad markers are included in the packaged OriginEndpoint.\n\"NONE\" will omit all SCTE-35 ad markers from the output.\n\"PASSTHROUGH\" causes the manifest to contain a copy of the SCTE-35 ad\nmarkers (comments) taken directly from the input HTTP Live Streaming (HLS) manifest.\n\"SCTE35_ENHANCED\" generates ad markers and blackout tags based on SCTE-35\nmessages in the input source.\n"
+        "HlsManifest$AdMarkers" : "This setting controls how ad markers are included in the packaged OriginEndpoint.\n\"NONE\" will omit all SCTE-35 ad markers from the output.\n\"PASSTHROUGH\" causes the manifest to contain a copy of the SCTE-35 ad\nmarkers (comments) taken directly from the input HTTP Live Streaming (HLS) manifest.\n\"SCTE35_ENHANCED\" generates ad markers and blackout tags based on SCTE-35\nmessages in the input source.\n\"DATERANGE\" inserts EXT-X-DATERANGE tags to signal ad and program transition events \nin HLS and CMAF manifests. For this option, you must set a programDateTimeIntervalSeconds value \nthat is greater than 0.\n",
+        "HlsManifestCreateOrUpdateParameters$AdMarkers" : "This setting controls how ad markers are included in the packaged OriginEndpoint.\n\"NONE\" will omit all SCTE-35 ad markers from the output.\n\"PASSTHROUGH\" causes the manifest to contain a copy of the SCTE-35 ad\nmarkers (comments) taken directly from the input HTTP Live Streaming (HLS) manifest.\n\"SCTE35_ENHANCED\" generates ad markers and blackout tags based on SCTE-35\nmessages in the input source.\n\"DATERANGE\" inserts EXT-X-DATERANGE tags to signal ad and program transition events \nin HLS and CMAF manifests. For this option, you must set a programDateTimeIntervalSeconds value \nthat is greater than 0.\n",
+        "HlsPackage$AdMarkers" : "This setting controls how ad markers are included in the packaged OriginEndpoint.\n\"NONE\" will omit all SCTE-35 ad markers from the output.\n\"PASSTHROUGH\" causes the manifest to contain a copy of the SCTE-35 ad\nmarkers (comments) taken directly from the input HTTP Live Streaming (HLS) manifest.\n\"SCTE35_ENHANCED\" generates ad markers and blackout tags based on SCTE-35\nmessages in the input source.\n\"DATERANGE\" inserts EXT-X-DATERANGE tags to signal ad and program transition events \nin HLS and CMAF manifests. For this option, you must set a programDateTimeIntervalSeconds value \nthat is greater than 0.\n"
       }
     },
     "AdTriggers" : {
@@ -44,6 +44,14 @@
         "DashPackage$AdsOnDeliveryRestrictions" : null,
         "HlsManifestCreateOrUpdateParameters$AdsOnDeliveryRestrictions" : null,
         "HlsPackage$AdsOnDeliveryRestrictions" : null
+      }
+    },
+    "Authorization" : {
+      "base" : "CDN Authorization credentials",
+      "refs" : {
+        "OriginEndpoint$Authorization" : null,
+        "OriginEndpointCreateParameters$Authorization" : null,
+        "OriginEndpointUpdateParameters$Authorization" : null
       }
     },
     "Channel" : {
@@ -387,6 +395,8 @@
     "__string" : {
       "base" : null,
       "refs" : {
+        "Authorization$CdnIdentifierSecret" : "The Amazon Resource Name (ARN) for the secret in Secrets Manager that your Content Distribution Network (CDN) uses for authorization to access your endpoint.\n",
+        "Authorization$SecretsRoleArn" : "The Amazon Resource Name (ARN) for the IAM role that allows MediaPackage to communicate with AWS Secrets Manager.\n",
         "Channel$Arn" : "The Amazon Resource Name (ARN) assigned to the Channel.",
         "Channel$Description" : "A short text description of the Channel.",
         "Channel$Id" : "The ID of the Channel.",

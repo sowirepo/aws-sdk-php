@@ -2,6 +2,7 @@
 
 namespace Aws\Test\EndpointDiscovery;
 
+use Aws\Api\ApiProvider;
 use Aws\EndpointDiscovery\Configuration;
 use Aws\EndpointDiscovery\ConfigurationInterface;
 use Aws\EndpointDiscovery\ConfigurationProvider;
@@ -26,6 +27,13 @@ endpoint_discovery_enabled = true
 endpoint_discovery_enabled = false
 EOT;
 
+    private $altIniFile = <<<EOT
+[custom]
+endpoint_discovery_enabled = true
+[default]
+endpoint_discovery_enabled = false
+EOT;
+
     public static function setUpBeforeClass()
     {
         self::$originalEnv = [
@@ -40,6 +48,7 @@ EOT;
     {
         putenv(ConfigurationProvider::ENV_ENABLED . '=');
         putenv(ConfigurationProvider::ENV_ENABLED_ALT . '=');
+        putenv(ConfigurationProvider::ENV_CONFIG_FILE . '=');
 
         $dir = sys_get_temp_dir() . '/.aws';
 
@@ -110,6 +119,36 @@ EOT;
         $this->assertSame($expected->toArray(), $result->toArray());
     }
 
+    public function testCreatesDefaultFromFallbackWithRequiredModel()
+    {
+        $this->clearEnv();
+        $expected  = new Configuration(true, 1000);
+        $config = [
+            'api_provider' => ApiProvider::filesystem(__DIR__ . '/fixtures'),
+            'version' => 'latest',
+            'service' => 'ed_required'
+        ];
+
+        /** @var ConfigurationInterface $result */
+        $result = call_user_func(ConfigurationProvider::fallback($config))->wait();
+        $this->assertSame($expected->toArray(), $result->toArray());
+    }
+
+    public function testCreatesDefaultFromFallbackWithOptionalModel()
+    {
+        $this->clearEnv();
+        $expected  = new Configuration(false, 1000);
+        $config = [
+            'api_provider' => ApiProvider::filesystem(__DIR__ . '/fixtures'),
+            'version' => 'latest',
+            'service' => 'ed_optional'
+        ];
+
+        /** @var ConfigurationInterface $result */
+        $result = call_user_func(ConfigurationProvider::fallback($config))->wait();
+        $this->assertSame($expected->toArray(), $result->toArray());
+    }
+
     public function testCreatesFromIniFileWithDefaultProfile()
     {
         $dir = $this->clearEnv();
@@ -120,6 +159,21 @@ EOT;
         $result = call_user_func(ConfigurationProvider::ini(null, null, 2000))->wait();
         $this->assertSame($expected->toArray(), $result->toArray());
         unlink($dir . '/config');
+    }
+
+    public function testCreatesFromIniFileWithDifferentDefaultFilename()
+    {
+        $dir = $this->clearEnv();
+        putenv(ConfigurationProvider::ENV_CONFIG_FILE . '=' . $dir . "/alt_config");
+        $expected  = new Configuration(false);
+        file_put_contents($dir . '/config', $this->iniFile);
+        file_put_contents($dir . '/alt_config', $this->altIniFile);
+        putenv('HOME=' . dirname($dir));
+        /** @var ConfigurationInterface $result */
+        $result = call_user_func(ConfigurationProvider::ini(null, null))->wait();
+        $this->assertSame($expected->toArray(), $result->toArray());
+        unlink($dir . '/config');
+        unlink($dir . '/alt_config');
     }
 
     public function testCreatesFromIniFileWithSpecifiedProfile()
@@ -345,7 +399,7 @@ EOT;
         $cache = $cacheBuilder->getMock();
         $cache->expects($this->any())
             ->method('get')
-            ->with(ConfigurationProvider::CACHE_KEY)
+            ->with(ConfigurationProvider::$cacheKey)
             ->willReturn($expected);
 
         $provider = ConfigurationProvider::defaultProvider(['endpoint_discovery' => $cache]);
@@ -353,6 +407,35 @@ EOT;
         $result = $provider()->wait();
         $this->assertInstanceOf(Configuration::class, $result);
         $this->assertSame($expected->toArray(), $result->toArray());
+    }
+
+
+    public function testUsesIniWithUseAwsConfigFileTrue()
+    {
+        $dir = $this->clearEnv();
+        $expected = new Configuration(true, 1000);
+        file_put_contents($dir . '/config', $this->iniFile);
+        putenv('HOME=' . dirname($dir));
+        /** @var ConfigurationInterface $result */
+        $result = call_user_func(
+            ConfigurationProvider::defaultProvider(['use_aws_shared_config_files' => true])
+        )->wait();
+        $this->assertEquals($expected->toArray(), $result->toArray());
+        unlink($dir . '/config');
+    }
+
+    public function testIgnoresIniWithUseAwsConfigFileFalse()
+    {
+        $dir = $this->clearEnv();
+        $expected = new Configuration(false, 1000);
+        file_put_contents($dir . '/config', $this->iniFile);
+        putenv('HOME=' . dirname($dir));
+        /** @var ConfigurationInterface $result */
+        $result = call_user_func(
+            ConfigurationProvider::defaultProvider(['use_aws_shared_config_files' => false])
+        )->wait();
+        $this->assertEquals($expected->toArray(), $result->toArray());
+        unlink($dir . '/config');
     }
 
     public function getSuccessfulUnwrapData()

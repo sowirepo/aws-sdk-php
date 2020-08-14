@@ -2,6 +2,8 @@
 namespace Aws\Test\S3;
 
 use Aws\Command;
+use Aws\CommandInterface;
+use Aws\Middleware;
 use Aws\Result;
 use Aws\S3\MultipartUploader;
 use Aws\S3\ObjectCopier;
@@ -9,6 +11,7 @@ use Aws\S3\S3Client;
 use Aws\Test\UsesServiceTrait;
 use GuzzleHttp\Promise;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\RequestInterface;
 
 class ObjectCopierTest extends TestCase
 {
@@ -55,6 +58,103 @@ class ObjectCopierTest extends TestCase
             $options
         ))->copy();
         $this->assertEquals('https://s3.amazonaws.com/bucket/key', $result['ObjectURL']);
+        $this->assertTrue($this->mockQueueEmpty());
+    }
+
+    /**
+     * @dataProvider getCopyTestCases
+     * @param array $mockedResults
+     * @param array $options
+     */
+    public function testDoesCorrectOperationWithAccessPointArn(
+        array $mockedResults,
+        array $options
+    ) {
+        /** @var \Aws\S3\S3Client $client */
+        $client = $this->getTestClient('S3', [
+            'region' => 'us-west-2'
+        ]);
+        $client->getHandlerList()->appendSign(Middleware::tap(
+            function (CommandInterface $cmd, RequestInterface $req) {
+
+                switch($cmd->getName()) {
+                    case 'CopyObject':
+                        $this->assertEquals(
+                            'mydest-123456789012.s3-accesspoint.us-west-2.amazonaws.com',
+                            $req->getUri()->getHost()
+                        );
+                        $this->assertEquals('/destKey', $req->getUri()->getPath());
+                        $this->assertEquals(
+                            'arn:aws:s3:us-west-2:123456789012:accesspoint:mydest',
+                            $cmd['Bucket']
+                        );
+                        $this->assertEquals(
+                            '/arn:aws:s3:us-west-2:123456789012:accesspoint:mysource/sourceKey',
+                            $cmd['CopySource']
+                        );
+                        $this->assertEquals(
+                            '/arn:aws:s3:us-west-2:123456789012:accesspoint:mysource/sourceKey',
+                            $req->getHeader('x-amz-copy-source')[0]
+                        );
+                        break;
+
+                    case 'CreateMultipartUpload':
+                    case 'CompleteMultipartUpload':
+                        $this->assertEquals(
+                            'mydest-123456789012.s3-accesspoint.us-west-2.amazonaws.com',
+                            $req->getUri()->getHost()
+                        );
+                        $this->assertEquals('/destKey', $req->getUri()->getPath());
+                        $this->assertEquals(
+                            'arn:aws:s3:us-west-2:123456789012:accesspoint:mydest',
+                            $cmd['Bucket']
+                        );
+                        break;
+
+                    case 'UploadPartCopy':
+                        $this->assertEquals(
+                            'mydest-123456789012.s3-accesspoint.us-west-2.amazonaws.com',
+                            $req->getUri()->getHost()
+                        );
+                        $this->assertEquals('/destKey', $req->getUri()->getPath());
+                        $this->assertEquals(
+                            'arn:aws:s3:us-west-2:123456789012:accesspoint:mydest',
+                            $cmd['Bucket']
+                        );
+                        $this->assertEquals(
+                            '/arn:aws:s3:us-west-2:123456789012:accesspoint:mysource/sourceKey',
+                            $cmd['CopySource']
+                        );
+                        $this->assertEquals(
+                            '/arn:aws:s3:us-west-2:123456789012:accesspoint:mysource/sourceKey',
+                            $req->getHeader('x-amz-copy-source')[0]
+                        );
+                        break;
+
+                    case 'HeadObject':
+                        $this->assertEquals(
+                            'mysource-123456789012.s3-accesspoint.us-west-2.amazonaws.com',
+                            $req->getUri()->getHost()
+                        );
+                        $this->assertEquals('/sourceKey', $req->getUri()->getPath());
+                        break;
+
+                    default:
+                        $this->fail('Unexpected command encountered.');
+
+                }
+
+                return Promise\promise_for(new Result([]));
+            }
+        ));
+        $this->addMockResults($client, $mockedResults);
+        (new ObjectCopier(
+            $client,
+            ['Bucket' => 'arn:aws:s3:us-west-2:123456789012:accesspoint:mysource', 'Key' => 'sourceKey'],
+            ['Bucket' => 'arn:aws:s3:us-west-2:123456789012:accesspoint:mydest', 'Key' => 'destKey'],
+            'private',
+            $options
+        ))->copy();
         $this->assertTrue($this->mockQueueEmpty());
     }
 
@@ -290,5 +390,67 @@ class ObjectCopierTest extends TestCase
 
         $this->assertEquals($url, $result['ObjectURL']);
         $this->assertTrue($this->mockQueueEmpty());
+    }
+
+    public function testS3ObjectCopierDoesTransformUnicodeKeyToEncodedURL()
+    {
+        /** @var \Aws\S3\S3Client $client */
+        $client = $this->getTestClient('s3');
+        $chinese = "中文";
+        $url = 'https://bucket.s3.amazonaws.com/' . rawurlencode($chinese);
+
+        $this->addMockResults(
+            $client,
+            $this->getSmallPutObjectMockResult()
+        );
+
+        $uploader = new ObjectCopier(
+            $client,
+            ['Bucket' => 'sourceBucket', 'Key' => $chinese],
+            ['Bucket' => 'bucket', 'Key' => $chinese],
+            'private'
+        );
+
+        $this->assertFalse($this->mockQueueEmpty());
+        $result = $uploader->copy();
+
+        $this->assertEquals($url, $result['ObjectURL']);
+    }
+
+    public function MultipartCopierProvider(){
+        return [
+            ["中文", "%E4%B8%AD%E6%96%87"],
+            ["文件夹/文件", "%E6%96%87%E4%BB%B6%E5%A4%B9/%E6%96%87%E4%BB%B6"],
+            ["first-folder/second-folder/key", "first-folder/second-folder/key"],
+        ];
+    }
+
+    /**
+     * @dataProvider MultipartCopierProvider
+     */
+    public function testS3ObjectMultipartCopier($input, $expectedOutput)
+    {
+        /** @var \Aws\S3\S3Client $client */
+        $client = $this->getTestClient('s3');
+
+        $this->addMockResults(
+            $client,
+            $this->getMultipartMockResults()
+        );
+
+        $uploader = new ObjectCopier(
+            $client,
+            ['Bucket' => 'sourceBucket', 'Key' => $input],
+            ['Bucket' => 'bucket', 'Key' => $input],
+            'private'
+        );
+
+        $this->assertFalse($this->mockQueueEmpty());
+        $result = $uploader->copy();
+
+        $this->assertEquals(
+            $result['ObjectURL'],
+            "https://bucket.s3.amazonaws.com/{$expectedOutput}"
+        );
     }
 }

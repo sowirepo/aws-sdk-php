@@ -91,8 +91,8 @@ class RetryMiddlewareTest extends TestCase
         $decider = RetryMiddleware::createDefaultDecider();
         $command = new Command('foo');
         $request = new Request('GET', 'http://www.example.com');
-        $version = (string) ClientInterface::VERSION;
-        if ($version[0] === '6') {
+        $version = \Aws\guzzle_major_version();
+        if ($version === 6 || $version === 7) {
             $previous = new RequestException(
                 'test',
                 $request,
@@ -100,7 +100,7 @@ class RetryMiddlewareTest extends TestCase
                 null,
                 ['errno' => CURLE_RECV_ERROR]
             );
-        } elseif ($version[0] === '5') {
+        } elseif ($version === 5) {
             $previous = new RequestException(
                 'cURL error ' . CURLE_RECV_ERROR . ': test',
                 new \GuzzleHttp\Message\Request('GET', 'http://www.example.com')
@@ -122,14 +122,14 @@ class RetryMiddlewareTest extends TestCase
         }
         $decider = RetryMiddleware::createDefaultDecider(
             3,
-            ['curlErrors' => [CURLE_BAD_CONTENT_ENCODING]]
+            ['curl_errors' => [CURLE_BAD_CONTENT_ENCODING]]
         );
         $command = new Command('foo');
         $request = new Request('GET', 'http://www.example.com');
-        $version = (string) ClientInterface::VERSION;
+        $version = \Aws\guzzle_major_version();
 
         // Custom error passed in to decider config should result in a retry
-        if ($version[0] === '6') {
+        if ($version === 6 || $version === 7) {
             $previous = new RequestException(
                 'test',
                 $request,
@@ -137,7 +137,7 @@ class RetryMiddlewareTest extends TestCase
                 null,
                 ['errno' => CURLE_BAD_CONTENT_ENCODING]
             );
-        } elseif ($version[0] === '5') {
+        } elseif ($version === 5) {
             $previous = new RequestException(
                 'cURL error ' . CURLE_BAD_CONTENT_ENCODING . ': test',
                 new \GuzzleHttp\Message\Request('GET', 'http://www.example.com')
@@ -152,7 +152,7 @@ class RetryMiddlewareTest extends TestCase
         $this->assertTrue($decider(0, $command, $request, null, $err));
 
         // Error not passed in to decider config should result in no retry
-        if ($version[0] === '6') {
+        if ($version === 6 || $version === 7) {
             $previous = new RequestException(
                 'test',
                 $request,
@@ -160,7 +160,7 @@ class RetryMiddlewareTest extends TestCase
                 null,
                 ['errno' => CURLE_ABORTED_BY_CALLBACK]
             );
-        } elseif ($version[0] === '5') {
+        } elseif ($version === 5) {
             $previous = new RequestException(
                 'cURL error ' . CURLE_ABORTED_BY_CALLBACK . ': test',
                 new \GuzzleHttp\Message\Request('GET', 'http://www.example.com')
@@ -188,6 +188,7 @@ class RetryMiddlewareTest extends TestCase
             [new AwsException('e', $command, ['code' => 'RequestThrottledException'])],
             [new AwsException('e', $command, ['code' => 'TooManyRequestsException'])],
             [new AwsException('e', $command, ['code' => 'IDPCommunicationError'])],
+            [new AwsException('e', $command, ['code' => 'EC2ThrottledException'])],
         ];
     }
     /**
@@ -225,7 +226,7 @@ class RetryMiddlewareTest extends TestCase
     {
         $decider = RetryMiddleware::createDefaultDecider(
             3,
-            ['errorCodes' => ['CustomRetryableException']]
+            ['error_codes' => ['CustomRetryableException']]
         );
         $command = new Command('foo');
         $request = new Request('GET', 'http://www.example.com');
@@ -243,7 +244,7 @@ class RetryMiddlewareTest extends TestCase
     {
         $decider = RetryMiddleware::createDefaultDecider(
             3,
-            ['statusCodes' => [400]]
+            ['status_codes' => [400]]
         );
         $command = new Command('foo');
         $request = new Request('GET', 'http://www.example.com');
@@ -530,6 +531,94 @@ class RetryMiddlewareTest extends TestCase
             ['baz' => 'quux'],
             ['fizz' => 'buzz'],
         ], $httpStats);
+    }
+
+    public function testReportsHttpStatsForEachException()
+    {
+        $command = new Command('TestCommand');
+        $response = new Response(500);
+
+        $handler = new MockHandler([
+            new AwsException(
+                'Test Exception',
+                $command,
+                [
+                    'response' => $response,
+                    'transfer_stats' => [
+                        'starttransfer_time' => 5,
+                        'appconnect_time' => 4
+                    ]
+                ]
+            ),
+            new AwsException(
+                'Test Exception',
+                $command,
+                [
+                    'response' => $response,
+                    'transfer_stats' => [
+                        'starttransfer_time' => 10,
+                        'appconnect_time' => 8
+                    ]
+                ]
+            ),
+            new AwsException(
+                'Test Exception',
+                $command,
+                [
+                    'response' => $response,
+                    'transfer_stats' => [
+                        'starttransfer_time' => 15,
+                        'appconnect_time' => 12
+                    ]
+                ]
+            ),
+            new AwsException(
+                'Test Exception',
+                $command,
+                [
+                    'response' => $response,
+                    'transfer_stats' => [
+                        'starttransfer_time' => 20,
+                        'appconnect_time' => 16
+                    ]
+                ]
+            )
+        ]);
+        $retryMW = new RetryMiddleware(
+            RetryMiddleware::createDefaultDecider($retries = 3),
+            [RetryMiddleware::class, 'exponentialDelay'],
+            $handler,
+            true
+        );
+
+        try {
+            $retryMW(new Command('SomeCommand'), new Request('GET', ''))
+                ->wait();
+            $this->fail('This command should have produced an AwsException.');
+        } catch (AwsException $e) {
+            $stats= $e->getTransferInfo();
+            $this->assertEquals(
+                [
+                    [
+                        'starttransfer_time' => 5,
+                        'appconnect_time' => 4
+                    ],
+                    [
+                        'starttransfer_time' => 10,
+                        'appconnect_time' => 8
+                    ],
+                    [
+                        'starttransfer_time' => 15,
+                        'appconnect_time' => 12
+                    ],
+                    [
+                        'starttransfer_time' => 20,
+                        'appconnect_time' => 16
+                    ],
+                ],
+                $stats['http']
+            );
+        }
     }
 
     public function testReportsHttpStatsForEachRequestEvenIfRetryStatsDisabled()

@@ -133,6 +133,12 @@
     },
     "BotAlias":{"type":"string"},
     "BotName":{"type":"string"},
+    "BotVersion":{
+      "type":"string",
+      "max":64,
+      "min":1,
+      "pattern":"[0-9]+|\\$LATEST"
+    },
     "Button":{
       "type":"structure",
       "required":[
@@ -250,6 +256,7 @@
         "Failed"
       ]
     },
+    "Double":{"type":"double"},
     "ErrorMessage":{"type":"string"},
     "FulfillmentState":{
       "type":"string",
@@ -309,6 +316,17 @@
       }
     },
     "HttpContentType":{"type":"string"},
+    "IntentConfidence":{
+      "type":"structure",
+      "members":{
+        "score":{"shape":"Double"}
+      }
+    },
+    "IntentList":{
+      "type":"list",
+      "member":{"shape":"PredictedIntent"},
+      "max":4
+    },
     "IntentName":{"type":"string"},
     "IntentSummary":{
       "type":"structure",
@@ -454,6 +472,18 @@
           "location":"header",
           "locationName":"x-amz-lex-intent-name"
         },
+        "nluIntentConfidence":{
+          "shape":"String",
+          "jsonvalue":true,
+          "location":"header",
+          "locationName":"x-amz-lex-nlu-intent-confidence"
+        },
+        "alternativeIntents":{
+          "shape":"String",
+          "jsonvalue":true,
+          "location":"header",
+          "locationName":"x-amz-lex-alternative-intents"
+        },
         "slots":{
           "shape":"String",
           "jsonvalue":true,
@@ -465,6 +495,11 @@
           "jsonvalue":true,
           "location":"header",
           "locationName":"x-amz-lex-session-attributes"
+        },
+        "sentimentResponse":{
+          "shape":"String",
+          "location":"header",
+          "locationName":"x-amz-lex-sentiment"
         },
         "message":{
           "shape":"Text",
@@ -491,7 +526,17 @@
           "location":"header",
           "locationName":"x-amz-lex-input-transcript"
         },
-        "audioStream":{"shape":"BlobStream"}
+        "audioStream":{"shape":"BlobStream"},
+        "botVersion":{
+          "shape":"BotVersion",
+          "location":"header",
+          "locationName":"x-amz-lex-bot-version"
+        },
+        "sessionId":{
+          "shape":"String",
+          "location":"header",
+          "locationName":"x-amz-lex-session-id"
+        }
       },
       "payload":"audioStream"
     },
@@ -528,13 +573,26 @@
       "type":"structure",
       "members":{
         "intentName":{"shape":"IntentName"},
+        "nluIntentConfidence":{"shape":"IntentConfidence"},
+        "alternativeIntents":{"shape":"IntentList"},
         "slots":{"shape":"StringMap"},
         "sessionAttributes":{"shape":"StringMap"},
         "message":{"shape":"Text"},
+        "sentimentResponse":{"shape":"SentimentResponse"},
         "messageFormat":{"shape":"MessageFormatType"},
         "dialogState":{"shape":"DialogState"},
         "slotToElicit":{"shape":"String"},
-        "responseCard":{"shape":"ResponseCard"}
+        "responseCard":{"shape":"ResponseCard"},
+        "sessionId":{"shape":"String"},
+        "botVersion":{"shape":"BotVersion"}
+      }
+    },
+    "PredictedIntent":{
+      "type":"structure",
+      "members":{
+        "intentName":{"shape":"IntentName"},
+        "nluIntentConfidence":{"shape":"IntentConfidence"},
+        "slots":{"shape":"StringMap"}
       }
     },
     "PutSessionRequest":{
@@ -640,6 +698,15 @@
         "genericAttachments":{"shape":"genericAttachmentList"}
       }
     },
+    "SentimentLabel":{"type":"string"},
+    "SentimentResponse":{
+      "type":"structure",
+      "members":{
+        "sentimentLabel":{"shape":"SentimentLabel"},
+        "sentimentScore":{"shape":"SentimentScore"}
+      }
+    },
+    "SentimentScore":{"type":"string"},
     "String":{"type":"string"},
     "StringMap":{
       "type":"map",

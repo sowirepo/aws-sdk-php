@@ -12,6 +12,7 @@ use Aws\S3\StreamWrapper;
 use Aws\Test\UsesServiceTrait;
 use GuzzleHttp\Psr7;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\RequestInterface;
 
 /**
  * @covers Aws\S3\StreamWrapper
@@ -76,6 +77,15 @@ class StreamWrapperTest extends TestCase
         fopen('s3://bucket/key', 'x');
     }
 
+    /**
+     * @expectedException \PHPUnit\Framework\Error\Warning
+     * @expectedExceptionMessage Bucket parameter parsed as ARN and failed with: Provided ARN was not a valid S3 access point ARN
+     */
+    public function testValidatesArn()
+    {
+        fopen('s3://arn:aws:s3:us-east-1:123456789012:foo:myaccess/test_key', 'r');
+    }
+
     public function testSuccessfulXMode()
     {
         $this->addMockResults(
@@ -129,6 +139,92 @@ class StreamWrapperTest extends TestCase
         $s = fopen('s3://bucket/ket', 'r', false, stream_context_create([
             's3' => ['seekable' => true]
         ]));
+
+        $this->assertEquals(0, ftell($s));
+        $this->assertFalse(feof($s));
+        $this->assertEquals('test', fread($s, 4));
+        $this->assertEquals(4, ftell($s));
+        $this->assertEquals(0, fseek($s, 0));
+        $this->assertEquals('testing 123', stream_get_contents($s));
+        $this->assertTrue(feof($s));
+        $this->assertTrue(fclose($s));
+    }
+
+    public function testOpensNonSeekableReadStreamWithAccessPointArn()
+    {
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, 'foo');
+        fseek($stream, 0);
+
+        $this->client->getHandlerList()->appendSign(
+            Middleware::tap(
+                function (CommandInterface $cmd, RequestInterface $req) {
+                    $this->assertEquals(
+                        'myaccess-123456789012.s3-accesspoint.us-east-1.amazonaws.com',
+                        $req->getUri()->getHost()
+                    );
+                    $this->assertEquals(
+                        '/test_key',
+                        $req->getUri()->getPath()
+                    );
+                }
+            ),
+            'tap_middleware'
+        );
+
+        $this->addMockResults($this->client, [
+            new Result([
+                'Body' => new Psr7\NoSeekStream(new Psr7\Stream($stream))
+            ])
+        ]);
+
+        $s = fopen('s3://arn:aws:s3:us-east-1:123456789012:accesspoint:myaccess/test_key', 'r');
+        $this->assertEquals(0, ftell($s));
+        $this->assertFalse(feof($s));
+        $this->assertEquals('foo', fread($s, 4));
+        $this->assertEquals(3, ftell($s));
+        $this->assertEquals(-1, fseek($s, 0));
+        $this->assertEquals('', stream_get_contents($s));
+        $this->assertTrue(feof($s));
+        $this->assertTrue(fclose($s));
+    }
+
+    public function testOpensSeekableReadStreamWithAccessPointArn()
+    {
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, 'testing 123');
+        fseek($stream, 0);
+
+        $this->client->getHandlerList()->appendSign(
+            Middleware::tap(
+                function (CommandInterface $cmd, RequestInterface $req) {
+                    $this->assertEquals(
+                        'myaccess-123456789012.s3-accesspoint.us-east-1.amazonaws.com',
+                        $req->getUri()->getHost()
+                    );
+                    $this->assertEquals(
+                        '/test_key',
+                        $req->getUri()->getPath()
+                    );
+                }
+            ),
+            'tap_middleware'
+        );
+
+        $this->addMockResults($this->client, [
+            new Result([
+                'Body' => new Psr7\NoSeekStream(new Psr7\Stream($stream))
+            ])
+        ]);
+
+        $s = fopen(
+            's3://arn:aws:s3:us-east-1:123456789012:accesspoint:myaccess/test_key',
+            'r',
+            false,
+            stream_context_create([
+                's3' => ['seekable' => true]
+            ])
+        );
 
         $this->assertEquals(0, ftell($s));
         $this->assertFalse(feof($s));
@@ -922,5 +1018,37 @@ class StreamWrapperTest extends TestCase
 
         $s = fopen('foo://bucket/key', 'r');
         $this->assertEquals('bar', fread($s, 4));
+    }
+
+    public function testStatDataIsClearedOnWriteUsingCustomProtocol()
+    {
+        StreamWrapper::register($this->client, 'foo', $this->cache);
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, 'bar');
+        fseek($stream, 0);
+
+        $this->addMockResults($this->client, [
+            new Result([
+                'Body' => new Psr7\NoSeekStream(new Psr7\Stream($stream))
+            ]),
+            new Result([
+                'Body' => new Psr7\NoSeekStream(new Psr7\Stream($stream))
+            ]),
+            new Result([
+                'Body' => new Psr7\NoSeekStream(new Psr7\Stream($stream))
+            ])
+        ]);
+
+        $this->assertEmpty($this->cache->get('foo://bucket/key'));
+
+        $objectStream = fopen('foo://bucket/key', 'w');
+        stat('foo://bucket/key');
+        $this->assertNotNull($this->cache->get('foo://bucket/key'));
+
+        fwrite($objectStream, 'bar');
+        fflush($objectStream);
+        $this->assertEmpty($this->cache->get('foo://bucket/key'));
+        
+        stream_wrapper_unregister('foo');
     }
 }

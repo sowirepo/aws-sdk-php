@@ -372,6 +372,46 @@
       ],
       "idempotent":true
     },
+    "ListTagsForResource":{
+      "name":"ListTagsForResource",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"ListTagsForResourceRequest"},
+      "output":{"shape":"ListTagsForResourceResponse"},
+      "errors":[
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"InvalidInputException"}
+      ]
+    },
+    "TagResource":{
+      "name":"TagResource",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"TagResourceRequest"},
+      "output":{"shape":"TagResourceResponse"},
+      "errors":[
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"LimitExceededException"},
+        {"shape":"InvalidInputException"}
+      ]
+    },
+    "UntagResource":{
+      "name":"UntagResource",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"UntagResourceRequest"},
+      "output":{"shape":"UntagResourceResponse"},
+      "errors":[
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"InvalidInputException"}
+      ]
+    },
     "UpdateDatasetGroup":{
       "name":"UpdateDatasetGroup",
       "http":{
@@ -454,7 +494,8 @@
       "members":{
         "DatasetGroupName":{"shape":"Name"},
         "Domain":{"shape":"Domain"},
-        "DatasetArns":{"shape":"ArnList"}
+        "DatasetArns":{"shape":"ArnList"},
+        "Tags":{"shape":"Tags"}
       }
     },
     "CreateDatasetGroupResponse":{
@@ -474,7 +515,8 @@
         "DatasetImportJobName":{"shape":"Name"},
         "DatasetArn":{"shape":"Arn"},
         "DataSource":{"shape":"DataSource"},
-        "TimestampFormat":{"shape":"TimestampFormat"}
+        "TimestampFormat":{"shape":"TimestampFormat"},
+        "Tags":{"shape":"Tags"}
       }
     },
     "CreateDatasetImportJobResponse":{
@@ -497,7 +539,8 @@
         "DatasetType":{"shape":"DatasetType"},
         "DataFrequency":{"shape":"Frequency"},
         "Schema":{"shape":"Schema"},
-        "EncryptionConfig":{"shape":"EncryptionConfig"}
+        "EncryptionConfig":{"shape":"EncryptionConfig"},
+        "Tags":{"shape":"Tags"}
       }
     },
     "CreateDatasetResponse":{
@@ -516,7 +559,8 @@
       "members":{
         "ForecastExportJobName":{"shape":"Name"},
         "ForecastArn":{"shape":"Arn"},
-        "Destination":{"shape":"DataDestination"}
+        "Destination":{"shape":"DataDestination"},
+        "Tags":{"shape":"Tags"}
       }
     },
     "CreateForecastExportJobResponse":{
@@ -533,7 +577,9 @@
       ],
       "members":{
         "ForecastName":{"shape":"Name"},
-        "PredictorArn":{"shape":"Arn"}
+        "PredictorArn":{"shape":"Arn"},
+        "ForecastTypes":{"shape":"ForecastTypes"},
+        "Tags":{"shape":"Tags"}
       }
     },
     "CreateForecastResponse":{
@@ -561,7 +607,8 @@
         "HPOConfig":{"shape":"HyperParameterTuningJobConfig"},
         "InputDataConfig":{"shape":"InputDataConfig"},
         "FeaturizationConfig":{"shape":"FeaturizationConfig"},
-        "EncryptionConfig":{"shape":"EncryptionConfig"}
+        "EncryptionConfig":{"shape":"EncryptionConfig"},
+        "Tags":{"shape":"Tags"}
       }
     },
     "CreatePredictorResponse":{
@@ -774,6 +821,7 @@
       "members":{
         "ForecastArn":{"shape":"Arn"},
         "ForecastName":{"shape":"Name"},
+        "ForecastTypes":{"shape":"ForecastTypes"},
         "PredictorArn":{"shape":"Arn"},
         "DatasetGroupArn":{"shape":"Arn"},
         "Status":{"shape":"String"},
@@ -804,6 +852,7 @@
         "InputDataConfig":{"shape":"InputDataConfig"},
         "FeaturizationConfig":{"shape":"FeaturizationConfig"},
         "EncryptionConfig":{"shape":"EncryptionConfig"},
+        "PredictorExecutionDetails":{"shape":"PredictorExecutionDetails"},
         "DatasetImportJobArns":{"shape":"ArnList"},
         "AutoMLAlgorithmArns":{"shape":"ArnList"},
         "Status":{"shape":"Status"},
@@ -903,7 +952,7 @@
     "Featurizations":{
       "type":"list",
       "member":{"shape":"Featurization"},
-      "max":1,
+      "max":50,
       "min":1
     },
     "FieldStatistics":{
@@ -969,6 +1018,16 @@
         "CreationTime":{"shape":"Timestamp"},
         "LastModificationTime":{"shape":"Timestamp"}
       }
+    },
+    "ForecastType":{
+      "type":"string",
+      "pattern":"(^0?\\.\\d\\d?$|^mean$)"
+    },
+    "ForecastTypes":{
+      "type":"list",
+      "member":{"shape":"ForecastType"},
+      "max":20,
+      "min":1
     },
     "Forecasts":{
       "type":"list",
@@ -1140,6 +1199,19 @@
         "NextToken":{"shape":"NextToken"}
       }
     },
+    "ListTagsForResourceRequest":{
+      "type":"structure",
+      "required":["ResourceArn"],
+      "members":{
+        "ResourceArn":{"shape":"Arn"}
+      }
+    },
+    "ListTagsForResourceResponse":{
+      "type":"structure",
+      "members":{
+        "Tags":{"shape":"Tags"}
+      }
+    },
     "MaxResults":{
       "type":"integer",
       "max":100,
@@ -1157,7 +1229,7 @@
       "type":"string",
       "max":63,
       "min":1,
-      "pattern":"^[a-zA-Z0-9][a-zA-Z0-9_]*"
+      "pattern":"^[a-zA-Z][a-zA-Z0-9_]*"
     },
     "NextToken":{
       "type":"string",
@@ -1185,6 +1257,25 @@
     "PredictorEvaluationResults":{
       "type":"list",
       "member":{"shape":"EvaluationResult"}
+    },
+    "PredictorExecution":{
+      "type":"structure",
+      "members":{
+        "AlgorithmArn":{"shape":"Arn"},
+        "TestWindows":{"shape":"TestWindowDetails"}
+      }
+    },
+    "PredictorExecutionDetails":{
+      "type":"structure",
+      "members":{
+        "PredictorExecutions":{"shape":"PredictorExecutions"}
+      }
+    },
+    "PredictorExecutions":{
+      "type":"list",
+      "member":{"shape":"PredictorExecution"},
+      "max":5,
+      "min":1
     },
     "PredictorSummary":{
       "type":"structure",
@@ -1237,7 +1328,7 @@
     },
     "S3Path":{
       "type":"string",
-      "pattern":"^s3://.+$"
+      "pattern":"^s3://[a-z0-9].+$"
     },
     "ScalingType":{
       "type":"string",
@@ -1263,7 +1354,9 @@
     },
     "SchemaAttributes":{
       "type":"list",
-      "member":{"shape":"SchemaAttribute"}
+      "member":{"shape":"SchemaAttribute"},
+      "max":100,
+      "min":1
     },
     "Statistics":{
       "type":"structure",
@@ -1304,6 +1397,70 @@
       "max":1,
       "min":1
     },
+    "Tag":{
+      "type":"structure",
+      "required":[
+        "Key",
+        "Value"
+      ],
+      "members":{
+        "Key":{"shape":"TagKey"},
+        "Value":{"shape":"TagValue"}
+      }
+    },
+    "TagKey":{
+      "type":"string",
+      "max":128,
+      "min":1,
+      "pattern":"^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"
+    },
+    "TagKeys":{
+      "type":"list",
+      "member":{"shape":"TagKey"},
+      "max":200,
+      "min":0
+    },
+    "TagResourceRequest":{
+      "type":"structure",
+      "required":[
+        "ResourceArn",
+        "Tags"
+      ],
+      "members":{
+        "ResourceArn":{"shape":"Arn"},
+        "Tags":{"shape":"Tags"}
+      }
+    },
+    "TagResourceResponse":{
+      "type":"structure",
+      "members":{
+      }
+    },
+    "TagValue":{
+      "type":"string",
+      "max":256,
+      "min":0,
+      "pattern":"^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"
+    },
+    "Tags":{
+      "type":"list",
+      "member":{"shape":"Tag"},
+      "max":200,
+      "min":0
+    },
+    "TestWindowDetails":{
+      "type":"list",
+      "member":{"shape":"TestWindowSummary"}
+    },
+    "TestWindowSummary":{
+      "type":"structure",
+      "members":{
+        "TestWindowStart":{"shape":"Timestamp"},
+        "TestWindowEnd":{"shape":"Timestamp"},
+        "Status":{"shape":"Status"},
+        "Message":{"shape":"ErrorMessage"}
+      }
+    },
     "TestWindows":{
       "type":"list",
       "member":{"shape":"WindowSummary"}
@@ -1320,6 +1477,22 @@
       "value":{"shape":"ParameterValue"},
       "max":100,
       "min":0
+    },
+    "UntagResourceRequest":{
+      "type":"structure",
+      "required":[
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "members":{
+        "ResourceArn":{"shape":"Arn"},
+        "TagKeys":{"shape":"TagKeys"}
+      }
+    },
+    "UntagResourceResponse":{
+      "type":"structure",
+      "members":{
+      }
     },
     "UpdateDatasetGroupRequest":{
       "type":"structure",

@@ -9,38 +9,50 @@ class SignerTest extends TestCase
 {
     /** @var Signer */
     private $instance;
+    private $testKeyFile;
+
+    const PASSPHRASE = "1234";
 
     public function setUp()
     {
-        foreach (['CF_PRIVATE_KEY', 'CF_KEY_PAIR_ID'] as $k) {
-            if (!isset($_SERVER[$k]) || $_SERVER[$k] == 'change_me') {
-                $this->markTestSkipped('$_SERVER[\'' . $k . '\'] not set in '
-                    . 'phpunit.xml');
-            }
-        }
-
+        $this->testKeyFile =__DIR__ . '/fixtures/test.pem';
         $this->instance = new Signer(
-            $_SERVER['CF_KEY_PAIR_ID'],
-            $_SERVER['CF_PRIVATE_KEY']
+            "test",
+            $this->testKeyFile,
+            self::PASSPHRASE
         );
     }
 
     /**
-     * Assert that the key is parsed during construction
+     * Assert that the key variable contents are parsed during construction
+     *
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessageRegExp /PK .*Not a real private key/
+     */
+    public function testBadPrivateKeyContents() {
+        $privateKey = "Not a real private key";
+        $s = new Signer(
+            "not a real keypair id",
+            $privateKey
+        );
+    }
+
+    /**
+     * Assert that the key file is parsed during construction
      *
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessageRegExp /PEM .*no start line/
      */
-    public function testBadPrivateKey() {
+    public function testBadPrivateKeyPath() {
         $filename = tempnam(sys_get_temp_dir(), 'cloudfront-fake-key');
         file_put_contents($filename, "Not a real private key");
         try {
-           $s = new Signer(
-               "not a real keypair id",
-               $filename
-           );
+            $s = new Signer(
+                "not a real keypair id",
+                $filename
+            );
         } finally {
-           unlink($filename);
+            unlink($filename);
         }
     }
 
@@ -59,7 +71,7 @@ class SignerTest extends TestCase
      */
     public function testEnsuresExpiresIsSetWhenUsingCannedPolicy()
     {
-        $s = new Signer('a', $_SERVER['CF_PRIVATE_KEY']);
+        $s = new Signer('a', $this->testKeyFile, self::PASSPHRASE);
         $s->getSignature('http://foo/bar');
     }
 
