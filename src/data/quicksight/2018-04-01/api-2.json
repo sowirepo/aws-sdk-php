@@ -46,6 +46,24 @@
         {"shape":"ResourceUnavailableException"}
       ]
     },
+    "CreateAnalysis":{
+      "name":"CreateAnalysis",
+      "http":{
+        "method":"POST",
+        "requestUri":"/accounts/{AwsAccountId}/analyses/{AnalysisId}"
+      },
+      "input":{"shape":"CreateAnalysisRequest"},
+      "output":{"shape":"CreateAnalysisResponse"},
+      "errors":[
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"InvalidParameterValueException"},
+        {"shape":"ThrottlingException"},
+        {"shape":"ResourceExistsException"},
+        {"shape":"ConflictException"},
+        {"shape":"UnsupportedUserEditionException"},
+        {"shape":"InternalFailureException"}
+      ]
+    },
     "CreateDashboard":{
       "name":"CreateDashboard",
       "http":{
@@ -290,6 +308,23 @@
         {"shape":"ThrottlingException"},
         {"shape":"InternalFailureException"},
         {"shape":"ResourceUnavailableException"}
+      ]
+    },
+    "DeleteAnalysis":{
+      "name":"DeleteAnalysis",
+      "http":{
+        "method":"DELETE",
+        "requestUri":"/accounts/{AwsAccountId}/analyses/{AnalysisId}"
+      },
+      "input":{"shape":"DeleteAnalysisRequest"},
+      "output":{"shape":"DeleteAnalysisResponse"},
+      "errors":[
+        {"shape":"ThrottlingException"},
+        {"shape":"InvalidParameterValueException"},
+        {"shape":"ConflictException"},
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"UnsupportedUserEditionException"},
+        {"shape":"InternalFailureException"}
       ]
     },
     "DeleteDashboard":{
@@ -550,6 +585,39 @@
         {"shape":"ThrottlingException"},
         {"shape":"InternalFailureException"},
         {"shape":"ResourceUnavailableException"}
+      ]
+    },
+    "DescribeAnalysis":{
+      "name":"DescribeAnalysis",
+      "http":{
+        "method":"GET",
+        "requestUri":"/accounts/{AwsAccountId}/analyses/{AnalysisId}"
+      },
+      "input":{"shape":"DescribeAnalysisRequest"},
+      "output":{"shape":"DescribeAnalysisResponse"},
+      "errors":[
+        {"shape":"InvalidParameterValueException"},
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"AccessDeniedException"},
+        {"shape":"ThrottlingException"},
+        {"shape":"UnsupportedUserEditionException"},
+        {"shape":"InternalFailureException"}
+      ]
+    },
+    "DescribeAnalysisPermissions":{
+      "name":"DescribeAnalysisPermissions",
+      "http":{
+        "method":"GET",
+        "requestUri":"/accounts/{AwsAccountId}/analyses/{AnalysisId}/permissions"
+      },
+      "input":{"shape":"DescribeAnalysisPermissionsRequest"},
+      "output":{"shape":"DescribeAnalysisPermissionsResponse"},
+      "errors":[
+        {"shape":"InvalidParameterValueException"},
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"ThrottlingException"},
+        {"shape":"UnsupportedUserEditionException"},
+        {"shape":"InternalFailureException"}
       ]
     },
     "DescribeDashboard":{
@@ -858,6 +926,7 @@
         {"shape":"IdentityTypeNotSupportedException"},
         {"shape":"SessionLifetimeInMinutesInvalidException"},
         {"shape":"UnsupportedUserEditionException"},
+        {"shape":"UnsupportedPricingPlanException"},
         {"shape":"InternalFailureException"}
       ]
     },
@@ -877,6 +946,21 @@
         {"shape":"ThrottlingException"},
         {"shape":"QuickSightUserNotFoundException"},
         {"shape":"SessionLifetimeInMinutesInvalidException"},
+        {"shape":"UnsupportedUserEditionException"},
+        {"shape":"InternalFailureException"}
+      ]
+    },
+    "ListAnalyses":{
+      "name":"ListAnalyses",
+      "http":{
+        "method":"GET",
+        "requestUri":"/accounts/{AwsAccountId}/analyses"
+      },
+      "input":{"shape":"ListAnalysesRequest"},
+      "output":{"shape":"ListAnalysesResponse"},
+      "errors":[
+        {"shape":"ThrottlingException"},
+        {"shape":"InvalidNextTokenException"},
         {"shape":"UnsupportedUserEditionException"},
         {"shape":"InternalFailureException"}
       ]
@@ -1232,6 +1316,40 @@
         {"shape":"ResourceUnavailableException"}
       ]
     },
+    "RestoreAnalysis":{
+      "name":"RestoreAnalysis",
+      "http":{
+        "method":"POST",
+        "requestUri":"/accounts/{AwsAccountId}/restore/analyses/{AnalysisId}"
+      },
+      "input":{"shape":"RestoreAnalysisRequest"},
+      "output":{"shape":"RestoreAnalysisResponse"},
+      "errors":[
+        {"shape":"ThrottlingException"},
+        {"shape":"InvalidParameterValueException"},
+        {"shape":"ConflictException"},
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"UnsupportedUserEditionException"},
+        {"shape":"InternalFailureException"}
+      ]
+    },
+    "SearchAnalyses":{
+      "name":"SearchAnalyses",
+      "http":{
+        "method":"POST",
+        "requestUri":"/accounts/{AwsAccountId}/search/analyses"
+      },
+      "input":{"shape":"SearchAnalysesRequest"},
+      "output":{"shape":"SearchAnalysesResponse"},
+      "errors":[
+        {"shape":"ThrottlingException"},
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"InvalidParameterValueException"},
+        {"shape":"UnsupportedUserEditionException"},
+        {"shape":"InvalidNextTokenException"},
+        {"shape":"InternalFailureException"}
+      ]
+    },
     "SearchDashboards":{
       "name":"SearchDashboards",
       "http":{
@@ -1314,6 +1432,41 @@
         {"shape":"ThrottlingException"},
         {"shape":"InternalFailureException"},
         {"shape":"ResourceUnavailableException"}
+      ]
+    },
+    "UpdateAnalysis":{
+      "name":"UpdateAnalysis",
+      "http":{
+        "method":"PUT",
+        "requestUri":"/accounts/{AwsAccountId}/analyses/{AnalysisId}"
+      },
+      "input":{"shape":"UpdateAnalysisRequest"},
+      "output":{"shape":"UpdateAnalysisResponse"},
+      "errors":[
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"InvalidParameterValueException"},
+        {"shape":"ThrottlingException"},
+        {"shape":"ResourceExistsException"},
+        {"shape":"ConflictException"},
+        {"shape":"UnsupportedUserEditionException"},
+        {"shape":"InternalFailureException"}
+      ]
+    },
+    "UpdateAnalysisPermissions":{
+      "name":"UpdateAnalysisPermissions",
+      "http":{
+        "method":"PUT",
+        "requestUri":"/accounts/{AwsAccountId}/analyses/{AnalysisId}/permissions"
+      },
+      "input":{"shape":"UpdateAnalysisPermissionsRequest"},
+      "output":{"shape":"UpdateAnalysisPermissionsResponse"},
+      "errors":[
+        {"shape":"ThrottlingException"},
+        {"shape":"InvalidParameterValueException"},
+        {"shape":"ResourceNotFoundException"},
+        {"shape":"UnsupportedUserEditionException"},
+        {"shape":"ConflictException"},
+        {"shape":"InternalFailureException"}
       ]
     },
     "UpdateDashboard":{
@@ -1648,6 +1801,12 @@
         "AvailabilityStatus":{"shape":"DashboardBehavior"}
       }
     },
+    "AdditionalDashboardIdList":{
+      "type":"list",
+      "member":{"shape":"RestrictiveResourceId"},
+      "max":20,
+      "min":1
+    },
     "AliasName":{
       "type":"string",
       "max":2048,
@@ -1660,6 +1819,104 @@
       "members":{
         "Domain":{"shape":"Domain"}
       }
+    },
+    "Analysis":{
+      "type":"structure",
+      "members":{
+        "AnalysisId":{"shape":"RestrictiveResourceId"},
+        "Arn":{"shape":"Arn"},
+        "Name":{"shape":"AnalysisName"},
+        "Status":{"shape":"ResourceStatus"},
+        "Errors":{"shape":"AnalysisErrorList"},
+        "DataSetArns":{"shape":"DataSetArnsList"},
+        "ThemeArn":{"shape":"Arn"},
+        "CreatedTime":{"shape":"Timestamp"},
+        "LastUpdatedTime":{"shape":"Timestamp"},
+        "Sheets":{"shape":"SheetList"}
+      }
+    },
+    "AnalysisError":{
+      "type":"structure",
+      "members":{
+        "Type":{"shape":"AnalysisErrorType"},
+        "Message":{"shape":"NonEmptyString"}
+      }
+    },
+    "AnalysisErrorList":{
+      "type":"list",
+      "member":{"shape":"AnalysisError"},
+      "min":1
+    },
+    "AnalysisErrorType":{
+      "type":"string",
+      "enum":[
+        "ACCESS_DENIED",
+        "SOURCE_NOT_FOUND",
+        "DATA_SET_NOT_FOUND",
+        "INTERNAL_FAILURE",
+        "PARAMETER_VALUE_INCOMPATIBLE",
+        "PARAMETER_TYPE_INVALID",
+        "PARAMETER_NOT_FOUND",
+        "COLUMN_TYPE_MISMATCH",
+        "COLUMN_GEOGRAPHIC_ROLE_MISMATCH",
+        "COLUMN_REPLACEMENT_MISSING"
+      ]
+    },
+    "AnalysisFilterAttribute":{
+      "type":"string",
+      "enum":["QUICKSIGHT_USER"]
+    },
+    "AnalysisName":{
+      "type":"string",
+      "max":2048,
+      "min":1,
+      "pattern":"[\\u0020-\\u00FF]+"
+    },
+    "AnalysisSearchFilter":{
+      "type":"structure",
+      "members":{
+        "Operator":{"shape":"FilterOperator"},
+        "Name":{"shape":"AnalysisFilterAttribute"},
+        "Value":{"shape":"String"}
+      }
+    },
+    "AnalysisSearchFilterList":{
+      "type":"list",
+      "member":{"shape":"AnalysisSearchFilter"},
+      "max":1
+    },
+    "AnalysisSourceEntity":{
+      "type":"structure",
+      "members":{
+        "SourceTemplate":{"shape":"AnalysisSourceTemplate"}
+      }
+    },
+    "AnalysisSourceTemplate":{
+      "type":"structure",
+      "required":[
+        "DataSetReferences",
+        "Arn"
+      ],
+      "members":{
+        "DataSetReferences":{"shape":"DataSetReferenceList"},
+        "Arn":{"shape":"Arn"}
+      }
+    },
+    "AnalysisSummary":{
+      "type":"structure",
+      "members":{
+        "Arn":{"shape":"Arn"},
+        "AnalysisId":{"shape":"RestrictiveResourceId"},
+        "Name":{"shape":"AnalysisName"},
+        "Status":{"shape":"ResourceStatus"},
+        "CreatedTime":{"shape":"Timestamp"},
+        "LastUpdatedTime":{"shape":"Timestamp"}
+      }
+    },
+    "AnalysisSummaryList":{
+      "type":"list",
+      "member":{"shape":"AnalysisSummary"},
+      "max":100
     },
     "Arn":{"type":"string"},
     "AssignmentStatus":{
@@ -1820,6 +2077,17 @@
         "DATETIME"
       ]
     },
+    "ColumnDescription":{
+      "type":"structure",
+      "members":{
+        "Text":{"shape":"ColumnDescriptiveText"}
+      }
+    },
+    "ColumnDescriptiveText":{
+      "type":"string",
+      "max":500,
+      "min":0
+    },
     "ColumnGroup":{
       "type":"structure",
       "members":{
@@ -1865,6 +2133,18 @@
       "max":64,
       "min":1
     },
+    "ColumnLevelPermissionRule":{
+      "type":"structure",
+      "members":{
+        "Principals":{"shape":"PrincipalList"},
+        "ColumnNames":{"shape":"ColumnNameList"}
+      }
+    },
+    "ColumnLevelPermissionRuleList":{
+      "type":"list",
+      "member":{"shape":"ColumnLevelPermissionRule"},
+      "min":1
+    },
     "ColumnList":{
       "type":"list",
       "member":{"shape":"ColumnName"},
@@ -1874,6 +2154,11 @@
     "ColumnName":{
       "type":"string",
       "max":128,
+      "min":1
+    },
+    "ColumnNameList":{
+      "type":"list",
+      "member":{"shape":"String"},
       "min":1
     },
     "ColumnSchema":{
@@ -1892,7 +2177,8 @@
     "ColumnTag":{
       "type":"structure",
       "members":{
-        "ColumnGeographicRole":{"shape":"GeoSpatialDataRole"}
+        "ColumnGeographicRole":{"shape":"GeoSpatialDataRole"},
+        "ColumnDescription":{"shape":"ColumnDescription"}
       }
     },
     "ColumnTagList":{
@@ -1940,12 +2226,14 @@
           "location":"querystring",
           "locationName":"namespace"
         },
-        "AccountCustomization":{"shape":"AccountCustomization"}
+        "AccountCustomization":{"shape":"AccountCustomization"},
+        "Tags":{"shape":"TagList"}
       }
     },
     "CreateAccountCustomizationResponse":{
       "type":"structure",
       "members":{
+        "Arn":{"shape":"Arn"},
         "AwsAccountId":{"shape":"AwsAccountId"},
         "Namespace":{"shape":"Namespace"},
         "AccountCustomization":{"shape":"AccountCustomization"},
@@ -1954,6 +2242,46 @@
           "shape":"StatusCode",
           "location":"statusCode"
         }
+      }
+    },
+    "CreateAnalysisRequest":{
+      "type":"structure",
+      "required":[
+        "AwsAccountId",
+        "AnalysisId",
+        "Name",
+        "SourceEntity"
+      ],
+      "members":{
+        "AwsAccountId":{
+          "shape":"AwsAccountId",
+          "location":"uri",
+          "locationName":"AwsAccountId"
+        },
+        "AnalysisId":{
+          "shape":"RestrictiveResourceId",
+          "location":"uri",
+          "locationName":"AnalysisId"
+        },
+        "Name":{"shape":"AnalysisName"},
+        "Parameters":{"shape":"Parameters"},
+        "Permissions":{"shape":"ResourcePermissionList"},
+        "SourceEntity":{"shape":"AnalysisSourceEntity"},
+        "ThemeArn":{"shape":"Arn"},
+        "Tags":{"shape":"TagList"}
+      }
+    },
+    "CreateAnalysisResponse":{
+      "type":"structure",
+      "members":{
+        "Arn":{"shape":"Arn"},
+        "AnalysisId":{"shape":"RestrictiveResourceId"},
+        "CreationStatus":{"shape":"ResourceStatus"},
+        "Status":{
+          "shape":"StatusCode",
+          "location":"statusCode"
+        },
+        "RequestId":{"shape":"String"}
       }
     },
     "CreateColumnsOperation":{
@@ -2029,6 +2357,7 @@
         "ColumnGroups":{"shape":"ColumnGroupList"},
         "Permissions":{"shape":"ResourcePermissionList"},
         "RowLevelPermissionDataSet":{"shape":"RowLevelPermissionDataSet"},
+        "ColumnLevelPermissionRules":{"shape":"ColumnLevelPermissionRuleList"},
         "Tags":{"shape":"TagList"}
       }
     },
@@ -2587,7 +2916,9 @@
         "Arn":{"shape":"Arn"},
         "SourceEntityArn":{"shape":"Arn"},
         "DataSetArns":{"shape":"DataSetArnsList"},
-        "Description":{"shape":"VersionDescription"}
+        "Description":{"shape":"VersionDescription"},
+        "ThemeArn":{"shape":"Arn"},
+        "Sheets":{"shape":"SheetList"}
       }
     },
     "DashboardVersionSummary":{
@@ -2628,7 +2959,8 @@
         "ImportMode":{"shape":"DataSetImportMode"},
         "ConsumedSpiceCapacityInBytes":{"shape":"Long"},
         "ColumnGroups":{"shape":"ColumnGroupList"},
-        "RowLevelPermissionDataSet":{"shape":"RowLevelPermissionDataSet"}
+        "RowLevelPermissionDataSet":{"shape":"RowLevelPermissionDataSet"},
+        "ColumnLevelPermissionRules":{"shape":"ColumnLevelPermissionRuleList"}
       }
     },
     "DataSetArnsList":{
@@ -2692,7 +3024,8 @@
         "CreatedTime":{"shape":"Timestamp"},
         "LastUpdatedTime":{"shape":"Timestamp"},
         "ImportMode":{"shape":"DataSetImportMode"},
-        "RowLevelPermissionDataSet":{"shape":"RowLevelPermissionDataSet"}
+        "RowLevelPermissionDataSet":{"shape":"RowLevelPermissionDataSet"},
+        "ColumnLevelPermissionRulesApplied":{"shape":"Boolean"}
       }
     },
     "DataSetSummaryList":{
@@ -2759,6 +3092,7 @@
         "JiraParameters":{"shape":"JiraParameters"},
         "MariaDbParameters":{"shape":"MariaDbParameters"},
         "MySqlParameters":{"shape":"MySqlParameters"},
+        "OracleParameters":{"shape":"OracleParameters"},
         "PostgreSqlParameters":{"shape":"PostgreSqlParameters"},
         "PrestoParameters":{"shape":"PrestoParameters"},
         "RdsParameters":{"shape":"RdsParameters"},
@@ -2791,6 +3125,7 @@
         "JIRA",
         "MARIADB",
         "MYSQL",
+        "ORACLE",
         "POSTGRESQL",
         "PRESTO",
         "REDSHIFT",
@@ -2801,7 +3136,8 @@
         "SPARK",
         "SQLSERVER",
         "TERADATA",
-        "TWITTER"
+        "TWITTER",
+        "TIMESTREAM"
       ]
     },
     "Database":{
@@ -2865,6 +3201,48 @@
           "shape":"StatusCode",
           "location":"statusCode"
         }
+      }
+    },
+    "DeleteAnalysisRequest":{
+      "type":"structure",
+      "required":[
+        "AwsAccountId",
+        "AnalysisId"
+      ],
+      "members":{
+        "AwsAccountId":{
+          "shape":"AwsAccountId",
+          "location":"uri",
+          "locationName":"AwsAccountId"
+        },
+        "AnalysisId":{
+          "shape":"RestrictiveResourceId",
+          "location":"uri",
+          "locationName":"AnalysisId"
+        },
+        "RecoveryWindowInDays":{
+          "shape":"RecoveryWindowInDays",
+          "location":"querystring",
+          "locationName":"recovery-window-in-days"
+        },
+        "ForceDeleteWithoutRecovery":{
+          "shape":"boolean",
+          "location":"querystring",
+          "locationName":"force-delete-without-recovery"
+        }
+      }
+    },
+    "DeleteAnalysisResponse":{
+      "type":"structure",
+      "members":{
+        "Status":{
+          "shape":"StatusCode",
+          "location":"statusCode"
+        },
+        "Arn":{"shape":"Arn"},
+        "AnalysisId":{"shape":"RestrictiveResourceId"},
+        "DeletionTime":{"shape":"Timestamp"},
+        "RequestId":{"shape":"String"}
       }
     },
     "DeleteDashboardRequest":{
@@ -3353,6 +3731,7 @@
     "DescribeAccountCustomizationResponse":{
       "type":"structure",
       "members":{
+        "Arn":{"shape":"Arn"},
         "AwsAccountId":{"shape":"AwsAccountId"},
         "Namespace":{"shape":"Namespace"},
         "AccountCustomization":{"shape":"AccountCustomization"},
@@ -3383,6 +3762,68 @@
           "shape":"StatusCode",
           "location":"statusCode"
         }
+      }
+    },
+    "DescribeAnalysisPermissionsRequest":{
+      "type":"structure",
+      "required":[
+        "AwsAccountId",
+        "AnalysisId"
+      ],
+      "members":{
+        "AwsAccountId":{
+          "shape":"AwsAccountId",
+          "location":"uri",
+          "locationName":"AwsAccountId"
+        },
+        "AnalysisId":{
+          "shape":"RestrictiveResourceId",
+          "location":"uri",
+          "locationName":"AnalysisId"
+        }
+      }
+    },
+    "DescribeAnalysisPermissionsResponse":{
+      "type":"structure",
+      "members":{
+        "AnalysisId":{"shape":"RestrictiveResourceId"},
+        "AnalysisArn":{"shape":"Arn"},
+        "Permissions":{"shape":"ResourcePermissionList"},
+        "Status":{
+          "shape":"StatusCode",
+          "location":"statusCode"
+        },
+        "RequestId":{"shape":"String"}
+      }
+    },
+    "DescribeAnalysisRequest":{
+      "type":"structure",
+      "required":[
+        "AwsAccountId",
+        "AnalysisId"
+      ],
+      "members":{
+        "AwsAccountId":{
+          "shape":"AwsAccountId",
+          "location":"uri",
+          "locationName":"AwsAccountId"
+        },
+        "AnalysisId":{
+          "shape":"RestrictiveResourceId",
+          "location":"uri",
+          "locationName":"AnalysisId"
+        }
+      }
+    },
+    "DescribeAnalysisResponse":{
+      "type":"structure",
+      "members":{
+        "Analysis":{"shape":"Analysis"},
+        "Status":{
+          "shape":"StatusCode",
+          "location":"statusCode"
+        },
+        "RequestId":{"shape":"String"}
       }
     },
     "DescribeDashboardPermissionsRequest":{
@@ -3997,6 +4438,14 @@
         "ENTERPRISE"
       ]
     },
+    "EmbeddingIdentityType":{
+      "type":"string",
+      "enum":[
+        "IAM",
+        "QUICKSIGHT",
+        "ANONYMOUS"
+      ]
+    },
     "EmbeddingUrl":{
       "type":"string",
       "sensitive":true
@@ -4108,7 +4557,7 @@
           "locationName":"DashboardId"
         },
         "IdentityType":{
-          "shape":"IdentityType",
+          "shape":"EmbeddingIdentityType",
           "location":"querystring",
           "locationName":"creds-type"
         },
@@ -4118,19 +4567,34 @@
           "locationName":"session-lifetime"
         },
         "UndoRedoDisabled":{
-          "shape":"boolean",
+          "shape":"Boolean",
           "location":"querystring",
           "locationName":"undo-redo-disabled"
         },
         "ResetDisabled":{
-          "shape":"boolean",
+          "shape":"Boolean",
           "location":"querystring",
           "locationName":"reset-disabled"
+        },
+        "StatePersistenceEnabled":{
+          "shape":"Boolean",
+          "location":"querystring",
+          "locationName":"state-persistence-enabled"
         },
         "UserArn":{
           "shape":"Arn",
           "location":"querystring",
           "locationName":"user-arn"
+        },
+        "Namespace":{
+          "shape":"Namespace",
+          "location":"querystring",
+          "locationName":"namespace"
+        },
+        "AdditionalDashboardIds":{
+          "shape":"AdditionalDashboardIdList",
+          "location":"querystring",
+          "locationName":"additional-dashboard-ids"
         }
       }
     },
@@ -4533,6 +4997,40 @@
       },
       "error":{"httpStatusCode":409},
       "exception":true
+    },
+    "ListAnalysesRequest":{
+      "type":"structure",
+      "required":["AwsAccountId"],
+      "members":{
+        "AwsAccountId":{
+          "shape":"AwsAccountId",
+          "location":"uri",
+          "locationName":"AwsAccountId"
+        },
+        "NextToken":{
+          "shape":"String",
+          "location":"querystring",
+          "locationName":"next-token"
+        },
+        "MaxResults":{
+          "shape":"MaxResults",
+          "box":true,
+          "location":"querystring",
+          "locationName":"max-results"
+        }
+      }
+    },
+    "ListAnalysesResponse":{
+      "type":"structure",
+      "members":{
+        "AnalysisSummaryList":{"shape":"AnalysisSummaryList"},
+        "NextToken":{"shape":"String"},
+        "Status":{
+          "shape":"StatusCode",
+          "location":"statusCode"
+        },
+        "RequestId":{"shape":"String"}
+      }
     },
     "ListDashboardVersionsRequest":{
       "type":"structure",
@@ -5439,10 +5937,24 @@
       "max":65535,
       "min":0
     },
+    "OracleParameters":{
+      "type":"structure",
+      "required":[
+        "Host",
+        "Port",
+        "Database"
+      ],
+      "members":{
+        "Host":{"shape":"Host"},
+        "Port":{"shape":"Port"},
+        "Database":{"shape":"Database"}
+      }
+    },
     "OutputColumn":{
       "type":"structure",
       "members":{
         "Name":{"shape":"ColumnName"},
+        "Description":{"shape":"ColumnDescriptiveText"},
         "Type":{"shape":"ColumnDataType"}
       }
     },
@@ -5534,6 +6046,12 @@
       "max":256,
       "min":1
     },
+    "PrincipalList":{
+      "type":"list",
+      "member":{"shape":"String"},
+      "max":100,
+      "min":1
+    },
     "ProjectOperation":{
       "type":"structure",
       "required":["ProjectedColumns"],
@@ -5582,6 +6100,11 @@
         "InstanceId":{"shape":"InstanceId"},
         "Database":{"shape":"Database"}
       }
+    },
+    "RecoveryWindowInDays":{
+      "type":"long",
+      "max":30,
+      "min":7
     },
     "RedshiftParameters":{
       "type":"structure",
@@ -5719,7 +6242,8 @@
         "CREATION_FAILED",
         "UPDATE_IN_PROGRESS",
         "UPDATE_SUCCESSFUL",
-        "UPDATE_FAILED"
+        "UPDATE_FAILED",
+        "DELETED"
       ]
     },
     "ResourceUnavailableException":{
@@ -5731,6 +6255,37 @@
       },
       "error":{"httpStatusCode":503},
       "exception":true
+    },
+    "RestoreAnalysisRequest":{
+      "type":"structure",
+      "required":[
+        "AwsAccountId",
+        "AnalysisId"
+      ],
+      "members":{
+        "AwsAccountId":{
+          "shape":"AwsAccountId",
+          "location":"uri",
+          "locationName":"AwsAccountId"
+        },
+        "AnalysisId":{
+          "shape":"RestrictiveResourceId",
+          "location":"uri",
+          "locationName":"AnalysisId"
+        }
+      }
+    },
+    "RestoreAnalysisResponse":{
+      "type":"structure",
+      "members":{
+        "Status":{
+          "shape":"StatusCode",
+          "location":"statusCode"
+        },
+        "Arn":{"shape":"Arn"},
+        "AnalysisId":{"shape":"RestrictiveResourceId"},
+        "RequestId":{"shape":"String"}
+      }
     },
     "RestrictiveResourceId":{
       "type":"string",
@@ -5811,6 +6366,38 @@
         "InputColumns":{"shape":"InputColumnList"}
       }
     },
+    "SearchAnalysesRequest":{
+      "type":"structure",
+      "required":[
+        "AwsAccountId",
+        "Filters"
+      ],
+      "members":{
+        "AwsAccountId":{
+          "shape":"AwsAccountId",
+          "location":"uri",
+          "locationName":"AwsAccountId"
+        },
+        "Filters":{"shape":"AnalysisSearchFilterList"},
+        "NextToken":{"shape":"String"},
+        "MaxResults":{
+          "shape":"MaxResults",
+          "box":true
+        }
+      }
+    },
+    "SearchAnalysesResponse":{
+      "type":"structure",
+      "members":{
+        "AnalysisSummaryList":{"shape":"AnalysisSummaryList"},
+        "NextToken":{"shape":"String"},
+        "Status":{
+          "shape":"StatusCode",
+          "location":"statusCode"
+        },
+        "RequestId":{"shape":"String"}
+      }
+    },
     "SearchDashboardsRequest":{
       "type":"structure",
       "required":[
@@ -5825,7 +6412,10 @@
         },
         "Filters":{"shape":"DashboardSearchFilterList"},
         "NextToken":{"shape":"String"},
-        "MaxResults":{"shape":"MaxResults"}
+        "MaxResults":{
+          "shape":"MaxResults",
+          "box":true
+        }
       }
     },
     "SearchDashboardsResponse":{
@@ -5861,11 +6451,23 @@
       "error":{"httpStatusCode":400},
       "exception":true
     },
+    "Sheet":{
+      "type":"structure",
+      "members":{
+        "SheetId":{"shape":"RestrictiveResourceId"},
+        "Name":{"shape":"NonEmptyString"}
+      }
+    },
     "SheetControlsOption":{
       "type":"structure",
       "members":{
         "VisibilityState":{"shape":"DashboardUIState"}
       }
+    },
+    "SheetList":{
+      "type":"list",
+      "member":{"shape":"Sheet"},
+      "max":20
     },
     "SheetStyle":{
       "type":"structure",
@@ -6059,7 +6661,8 @@
       "enum":[
         "SOURCE_NOT_FOUND",
         "DATA_SET_NOT_FOUND",
-        "INTERNAL_FAILURE"
+        "INTERNAL_FAILURE",
+        "ACCESS_DENIED"
       ]
     },
     "TemplateName":{
@@ -6118,7 +6721,9 @@
         "Status":{"shape":"ResourceStatus"},
         "DataSetConfigurations":{"shape":"DataSetConfigurationList"},
         "Description":{"shape":"VersionDescription"},
-        "SourceEntityArn":{"shape":"Arn"}
+        "SourceEntityArn":{"shape":"Arn"},
+        "ThemeArn":{"shape":"Arn"},
+        "Sheets":{"shape":"SheetList"}
       }
     },
     "TemplateVersionSummary":{
@@ -6342,6 +6947,15 @@
         "MeasureForeground":{"shape":"HexColor"}
       }
     },
+    "UnsupportedPricingPlanException":{
+      "type":"structure",
+      "members":{
+        "Message":{"shape":"String"},
+        "RequestId":{"shape":"String"}
+      },
+      "error":{"httpStatusCode":403},
+      "exception":true
+    },
     "UnsupportedUserEditionException":{
       "type":"structure",
       "members":{
@@ -6403,6 +7017,7 @@
     "UpdateAccountCustomizationResponse":{
       "type":"structure",
       "members":{
+        "Arn":{"shape":"Arn"},
         "AwsAccountId":{"shape":"AwsAccountId"},
         "Namespace":{"shape":"Namespace"},
         "AccountCustomization":{"shape":"AccountCustomization"},
@@ -6437,6 +7052,78 @@
           "shape":"StatusCode",
           "location":"statusCode"
         }
+      }
+    },
+    "UpdateAnalysisPermissionsRequest":{
+      "type":"structure",
+      "required":[
+        "AwsAccountId",
+        "AnalysisId"
+      ],
+      "members":{
+        "AwsAccountId":{
+          "shape":"AwsAccountId",
+          "location":"uri",
+          "locationName":"AwsAccountId"
+        },
+        "AnalysisId":{
+          "shape":"RestrictiveResourceId",
+          "location":"uri",
+          "locationName":"AnalysisId"
+        },
+        "GrantPermissions":{"shape":"UpdateResourcePermissionList"},
+        "RevokePermissions":{"shape":"UpdateResourcePermissionList"}
+      }
+    },
+    "UpdateAnalysisPermissionsResponse":{
+      "type":"structure",
+      "members":{
+        "AnalysisArn":{"shape":"Arn"},
+        "AnalysisId":{"shape":"RestrictiveResourceId"},
+        "Permissions":{"shape":"ResourcePermissionList"},
+        "RequestId":{"shape":"String"},
+        "Status":{
+          "shape":"StatusCode",
+          "location":"statusCode"
+        }
+      }
+    },
+    "UpdateAnalysisRequest":{
+      "type":"structure",
+      "required":[
+        "AwsAccountId",
+        "AnalysisId",
+        "Name",
+        "SourceEntity"
+      ],
+      "members":{
+        "AwsAccountId":{
+          "shape":"AwsAccountId",
+          "location":"uri",
+          "locationName":"AwsAccountId"
+        },
+        "AnalysisId":{
+          "shape":"RestrictiveResourceId",
+          "location":"uri",
+          "locationName":"AnalysisId"
+        },
+        "Name":{"shape":"AnalysisName"},
+        "Parameters":{"shape":"Parameters"},
+        "SourceEntity":{"shape":"AnalysisSourceEntity"},
+        "ThemeArn":{"shape":"Arn"}
+      }
+    },
+    "UpdateAnalysisResponse":{
+      "type":"structure",
+      "members":{
+        "Arn":{"shape":"Arn"},
+        "AnalysisId":{"shape":"RestrictiveResourceId"},
+        "UpdateStatus":{"shape":"ResourceStatus"},
+        "Status":{
+          "shape":"StatusCode",
+          "location":"statusCode"
+        },
+        "RequestId":{"shape":"String"}
       }
     },
     "UpdateDashboardPermissionsRequest":{
@@ -6606,7 +7293,8 @@
         "LogicalTableMap":{"shape":"LogicalTableMap"},
         "ImportMode":{"shape":"DataSetImportMode"},
         "ColumnGroups":{"shape":"ColumnGroupList"},
-        "RowLevelPermissionDataSet":{"shape":"RowLevelPermissionDataSet"}
+        "RowLevelPermissionDataSet":{"shape":"RowLevelPermissionDataSet"},
+        "ColumnLevelPermissionRules":{"shape":"ColumnLevelPermissionRuleList"}
       }
     },
     "UpdateDataSetResponse":{

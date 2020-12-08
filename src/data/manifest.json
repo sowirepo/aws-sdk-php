@@ -34,6 +34,13 @@
             "2017-07-25": "2017-07-25"
         }
     },
+    "amplifybackend": {
+        "namespace": "AmplifyBackend",
+        "versions": {
+            "latest": "2020-08-11",
+            "2020-08-11": "2020-08-11"
+        }
+    },
     "apigateway": {
         "namespace": "ApiGateway",
         "versions": {
@@ -61,6 +68,20 @@
         "versions": {
             "latest": "2019-10-09",
             "2019-10-09": "2019-10-09"
+        }
+    },
+    "appflow": {
+        "namespace": "Appflow",
+        "versions": {
+            "latest": "2020-08-23",
+            "2020-08-23": "2020-08-23"
+        }
+    },
+    "appintegrations": {
+        "namespace": "AppIntegrationsService",
+        "versions": {
+            "latest": "2020-07-29",
+            "2020-07-29": "2020-07-29"
         }
     },
     "application-autoscaling": {
@@ -361,6 +382,13 @@
             "2014-11-12": "2014-11-12"
         }
     },
+    "connect-contact-lens": {
+        "namespace": "ConnectContactLens",
+        "versions": {
+            "latest": "2020-08-21",
+            "2020-08-21": "2020-08-21"
+        }
+    },
     "connect": {
         "namespace": "Connect",
         "versions": {
@@ -382,11 +410,25 @@
             "2017-01-06": "2017-01-06"
         }
     },
+    "customer-profiles": {
+        "namespace": "CustomerProfiles",
+        "versions": {
+            "latest": "2020-08-15",
+            "2020-08-15": "2020-08-15"
+        }
+    },
     "data.iot": {
         "namespace": "IotDataPlane",
         "versions": {
             "latest": "2015-05-28",
             "2015-05-28": "2015-05-28"
+        }
+    },
+    "databrew": {
+        "namespace": "GlueDataBrew",
+        "versions": {
+            "latest": "2017-07-25",
+            "2017-07-25": "2017-07-25"
         }
     },
     "dataexchange": {
@@ -429,6 +471,13 @@
         "versions": {
             "latest": "2015-06-23",
             "2015-06-23": "2015-06-23"
+        }
+    },
+    "devops-guru": {
+        "namespace": "DevOpsGuru",
+        "versions": {
+            "latest": "2020-12-01",
+            "2020-12-01": "2020-12-01"
         }
     },
     "directconnect": {
@@ -504,6 +553,13 @@
             "2016-04-01": "2016-04-01",
             "2015-10-01": "2015-10-01",
             "2015-04-15": "2016-11-15"
+        }
+    },
+    "ecr-public": {
+        "namespace": "ECRPublic",
+        "versions": {
+            "latest": "2020-10-30",
+            "2020-10-30": "2020-10-30"
         }
     },
     "ecr": {
@@ -731,6 +787,13 @@
             "2010-05-08": "2010-05-08"
         }
     },
+    "identitystore": {
+        "namespace": "IdentityStore",
+        "versions": {
+            "latest": "2020-06-15",
+            "2020-06-15": "2020-06-15"
+        }
+    },
     "imagebuilder": {
         "namespace": "imagebuilder",
         "versions": {
@@ -942,6 +1005,13 @@
             "2014-03-28": "2014-03-28"
         }
     },
+    "lookoutvision": {
+        "namespace": "LookoutforVision",
+        "versions": {
+            "latest": "2020-11-20",
+            "2020-11-20": "2020-11-20"
+        }
+    },
     "machinelearning": {
         "namespace": "MachineLearning",
         "versions": {
@@ -1089,11 +1159,25 @@
             "2017-01-17": "2017-01-17"
         }
     },
+    "mwaa": {
+        "namespace": "MWAA",
+        "versions": {
+            "latest": "2020-07-01",
+            "2020-07-01": "2020-07-01"
+        }
+    },
     "neptune": {
         "namespace": "Neptune",
         "versions": {
             "latest": "2014-10-31",
             "2014-10-31": "2014-10-31"
+        }
+    },
+    "network-firewall": {
+        "namespace": "NetworkFirewall",
+        "versions": {
+            "latest": "2020-11-12",
+            "2020-11-12": "2020-11-12"
         }
     },
     "networkmanager": {
@@ -1230,6 +1314,13 @@
             "2014-09-01": "2014-09-01"
         }
     },
+    "redshift-data": {
+        "namespace": "RedshiftDataAPIService",
+        "versions": {
+            "latest": "2019-12-20",
+            "2019-12-20": "2019-12-20"
+        }
+    },
     "redshift": {
         "namespace": "Redshift",
         "versions": {
@@ -1314,11 +1405,25 @@
             "2018-08-20": "2018-08-20"
         }
     },
+    "s3outposts": {
+        "namespace": "S3Outposts",
+        "versions": {
+            "latest": "2017-07-25",
+            "2017-07-25": "2017-07-25"
+        }
+    },
     "sagemaker-a2i-runtime": {
         "namespace": "AugmentedAIRuntime",
         "versions": {
             "latest": "2019-11-07",
             "2019-11-07": "2019-11-07"
+        }
+    },
+    "sagemaker-featurestore-runtime": {
+        "namespace": "SageMakerFeatureStoreRuntime",
+        "versions": {
+            "latest": "2020-07-01",
+            "2020-07-01": "2020-07-01"
         }
     },
     "sagemaker": {
@@ -1368,6 +1473,13 @@
         "versions": {
             "latest": "2019-06-24",
             "2019-06-24": "2019-06-24"
+        }
+    },
+    "servicecatalog-appregistry": {
+        "namespace": "AppRegistry",
+        "versions": {
+            "latest": "2020-06-24",
+            "2020-06-24": "2020-06-24"
         }
     },
     "servicecatalog": {
@@ -1447,6 +1559,13 @@
             "2014-11-06": "2014-11-06"
         }
     },
+    "sso-admin": {
+        "namespace": "SSOAdmin",
+        "versions": {
+            "latest": "2020-07-20",
+            "2020-07-20": "2020-07-20"
+        }
+    },
     "sso-oidc": {
         "namespace": "SSOOIDC",
         "versions": {
@@ -1515,6 +1634,20 @@
         "versions": {
             "latest": "2018-06-27",
             "2018-06-27": "2018-06-27"
+        }
+    },
+    "timestream-query": {
+        "namespace": "TimestreamQuery",
+        "versions": {
+            "latest": "2018-11-01",
+            "2018-11-01": "2018-11-01"
+        }
+    },
+    "timestream-write": {
+        "namespace": "TimestreamWrite",
+        "versions": {
+            "latest": "2018-11-01",
+            "2018-11-01": "2018-11-01"
         }
     },
     "transcribe": {

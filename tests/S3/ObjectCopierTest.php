@@ -34,7 +34,7 @@ class ObjectCopierTest extends TestCase
             'private',
             $options
         ))->copy();
-        $this->assertEquals('https://bucket.s3.amazonaws.com/key', $result['ObjectURL']);
+        $this->assertSame('https://bucket.s3.amazonaws.com/key', $result['ObjectURL']);
         $this->assertTrue($this->mockQueueEmpty());
     }
 
@@ -57,7 +57,7 @@ class ObjectCopierTest extends TestCase
             'private',
             $options
         ))->copy();
-        $this->assertEquals('https://s3.amazonaws.com/bucket/key', $result['ObjectURL']);
+        $this->assertSame('https://s3.amazonaws.com/bucket/key', $result['ObjectURL']);
         $this->assertTrue($this->mockQueueEmpty());
     }
 
@@ -177,7 +177,7 @@ class ObjectCopierTest extends TestCase
         ))->promise();
         $this->assertFalse($this->mockQueueEmpty());
         $result = $promise->wait();
-        $this->assertEquals('https://bucket.s3.amazonaws.com/key', $result['ObjectURL']);
+        $this->assertSame('https://bucket.s3.amazonaws.com/key', $result['ObjectURL']);
         $this->assertTrue($this->mockQueueEmpty());
     }
 
@@ -202,7 +202,7 @@ class ObjectCopierTest extends TestCase
         ))->promise();
         $this->assertFalse($this->mockQueueEmpty());
         $result = $promise->wait();
-        $this->assertEquals('https://s3.amazonaws.com/bucket/key', $result['ObjectURL']);
+        $this->assertSame('https://s3.amazonaws.com/bucket/key', $result['ObjectURL']);
         $this->assertTrue($this->mockQueueEmpty());
     }
 
@@ -214,13 +214,13 @@ class ObjectCopierTest extends TestCase
         return [$smallHeadObject, $putObject];
     }
 
-    private function getMultipartMockResults()
+    private function getMultipartMockResults($key = 'key')
     {
         $smallHeadObject = new Result(['ContentLength' => 1024 * 1024 * 6]);
         $partCount = ceil($smallHeadObject['ContentLength'] / MultipartUploader::PART_MIN_SIZE);
         $initiate = new Result(['UploadId' => 'foo']);
         $putPart = new Result(['ETag' => 'bar']);
-        $complete = new Result(['Location' => 'https://bucket.s3.amazonaws.com/key']);
+        $complete = new Result(['Location' => 'https://bucket.s3.amazonaws.com/'.$key]);
 
         return array_merge(
             [$smallHeadObject, $initiate],
@@ -326,10 +326,10 @@ class ObjectCopierTest extends TestCase
         $copyOptions = [
             'params'          => ['RequestPayer' => 'test'],
             'before_lookup'   => function($command) {
-                $this->assertEquals('test', $command['RequestPayer']);
+                $this->assertSame('test', $command['RequestPayer']);
             },
             'before_upload'   => function($command) {
-                $this->assertEquals('test', $command['RequestPayer']);
+                $this->assertSame('test', $command['RequestPayer']);
             },
         ];
         $url = 'https://bucket.s3.amazonaws.com/key';
@@ -348,7 +348,7 @@ class ObjectCopierTest extends TestCase
         $this->assertFalse($this->mockQueueEmpty());
         $result = $uploader->copy();
 
-        $this->assertEquals($url, $result['ObjectURL']);
+        $this->assertSame($url, $result['ObjectURL']);
         $this->assertTrue($this->mockQueueEmpty());
     }
 
@@ -360,16 +360,16 @@ class ObjectCopierTest extends TestCase
             'mup_threshold'   => MultipartUploader::PART_MIN_SIZE,
             'params'          => ['RequestPayer' => 'test'],
             'before_lookup'   => function($command) {
-                $this->assertEquals('test', $command['RequestPayer']);
+                $this->assertSame('test', $command['RequestPayer']);
             },
             'before_initiate' => function($command) {
-                $this->assertEquals('test', $command['RequestPayer']);
+                $this->assertSame('test', $command['RequestPayer']);
             },
             'before_upload'   => function($command) {
-                $this->assertEquals('test', $command['RequestPayer']);
+                $this->assertSame('test', $command['RequestPayer']);
             },
             'before_complete' => function($command) {
-                $this->assertEquals('test', $command['RequestPayer']);
+                $this->assertSame('test', $command['RequestPayer']);
             }
         ];
         $url = 'https://bucket.s3.amazonaws.com/key';
@@ -388,7 +388,7 @@ class ObjectCopierTest extends TestCase
         $this->assertFalse($this->mockQueueEmpty());
         $result = $uploader->copy();
 
-        $this->assertEquals($url, $result['ObjectURL']);
+        $this->assertSame($url, $result['ObjectURL']);
         $this->assertTrue($this->mockQueueEmpty());
     }
 
@@ -414,7 +414,7 @@ class ObjectCopierTest extends TestCase
         $this->assertFalse($this->mockQueueEmpty());
         $result = $uploader->copy();
 
-        $this->assertEquals($url, $result['ObjectURL']);
+        $this->assertSame($url, $result['ObjectURL']);
     }
 
     public function MultipartCopierProvider(){
@@ -435,22 +435,24 @@ class ObjectCopierTest extends TestCase
 
         $this->addMockResults(
             $client,
-            $this->getMultipartMockResults()
+            $this->getMultipartMockResults($expectedOutput)
         );
 
         $uploader = new ObjectCopier(
             $client,
             ['Bucket' => 'sourceBucket', 'Key' => $input],
             ['Bucket' => 'bucket', 'Key' => $input],
-            'private'
+            'private',
+            ['mup_threshold' => MultipartUploader::PART_MIN_SIZE]
         );
 
         $this->assertFalse($this->mockQueueEmpty());
         $result = $uploader->copy();
 
-        $this->assertEquals(
-            $result['ObjectURL'],
-            "https://bucket.s3.amazonaws.com/{$expectedOutput}"
+        $this->assertSame(
+            "https://bucket.s3.amazonaws.com/{$expectedOutput}",
+            $result['ObjectURL']
         );
+        $this->assertTrue($this->mockQueueEmpty());
     }
 }

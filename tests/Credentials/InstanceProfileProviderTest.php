@@ -6,7 +6,7 @@ use Aws\Credentials\CredentialsInterface;
 use Aws\Credentials\InstanceProfileProvider;
 use Aws\Exception\CredentialsException;
 use Aws\Sdk;
-use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Promise;
 use GuzzleHttp\Psr7;
 use GuzzleHttp\Exception\RequestException;
@@ -90,14 +90,15 @@ class InstanceProfileProviderTest extends TestCase
      * @param array $responses
      * @param string $profile
      * @param array $creds
+     * @param bool $throwConnectException
      * @return \Closure
      */
     private function getSecureTestClient(
         $responses = [],
         $profile = 'MockProfile',
-        $creds = ['foo_key', 'baz_secret', 'qux_token', null]
-    )
-    {
+        $creds = ['foo_key', 'baz_secret', 'qux_token', null],
+        $throwConnectException = false
+    ) {
         $putRequests = 0;
         $getProfileRequests = 0;
         $getCredsRequests = 0;
@@ -106,6 +107,7 @@ class InstanceProfileProviderTest extends TestCase
             $responses,
             $profile,
             $creds,
+            $throwConnectException,
             &$putRequests,
             &$getProfileRequests,
             &$getCredsRequests
@@ -135,13 +137,20 @@ class InstanceProfileProviderTest extends TestCase
                     || $request->getHeader('x-aws-ec2-metadata-token')[0]
                     !== 'MOCK_TOKEN_VALUE'
                 ) {
-                    return Promise\rejection_for([
-                        'exception' => new RequestException(
+                    if ($throwConnectException) {
+                        $exception = new ConnectException(
+                            '401 Unauthorized - Valid unexpired token required',
+                            $request
+                        );
+                    } else {
+                        $exception = new RequestException(
                             '401 Unauthorized - Valid unexpired token required',
                             $request,
                             new Response(401)
-                        )
-                    ]);
+                        );
+                    }
+
+                    return Promise\rejection_for(['exception' => $exception]);
                 }
                 switch ($request->getUri()->getPath()) {
                     case '/latest/meta-data/iam/security-credentials':
@@ -189,14 +198,15 @@ class InstanceProfileProviderTest extends TestCase
      * @param array $responses
      * @param string $profile
      * @param array $creds
+     * @param bool $throwConnectException
      * @return \Closure
      */
     private function getInsecureTestClient(
         $responses = [],
         $profile = 'MockProfile',
-        $creds = ['foo_key', 'baz_secret', 'qux_token', null]
-    )
-    {
+        $creds = ['foo_key', 'baz_secret', 'qux_token', null],
+        $throwConnectException = false
+    ) {
         $requestClass = $this->getRequestClass();
         $responseClass = $this->getResponseClass();
         $getProfileRequests = 0;
@@ -208,14 +218,24 @@ class InstanceProfileProviderTest extends TestCase
             $requestClass,
             $profile,
             $creds,
+            $throwConnectException,
             &$getProfileRequests,
             &$getCredsRequests
         ) {
             if ($request->getMethod() === 'PUT'
                 && $request->getUri()->getPath() === '/latest/api/token'
             ) {
-                return Promise\rejection_for([
-                    'exception' => new RequestException(
+                if ($throwConnectException) {
+                    $exception = new ConnectException(
+                        '404 Not Found',
+                        // Needed for different interfaces in Guzzle V5 & V6
+                        new $requestClass(
+                            $request->getMethod(),
+                            $request->getUri()->getPath()
+                        )
+                    );
+                } else {
+                    $exception = new RequestException(
                         '404 Not Found',
                         // Needed for different interfaces in Guzzle V5 & V6
                         new $requestClass(
@@ -223,8 +243,10 @@ class InstanceProfileProviderTest extends TestCase
                             $request->getUri()->getPath()
                         ),
                         new $responseClass(404)
-                    )
-                ]);
+                    );
+                }
+
+                return Promise\rejection_for(['exception' => $exception]);
             }
             if ($request->getMethod() === 'GET') {
                 switch ($request->getUri()->getPath()) {
@@ -284,11 +306,11 @@ class InstanceProfileProviderTest extends TestCase
 
         /** @var CredentialsInterface $credentials */
         $credentials = $provider()->wait();
-        $this->assertEquals(
+        $this->assertSame(
             $expected->getAccessKeyId(),
             $credentials->getAccessKeyId()
         );
-        $this->assertEquals(
+        $this->assertSame(
             $expected->getSecretKey(),
             $credentials->getSecretKey()
         );
@@ -435,6 +457,54 @@ class InstanceProfileProviderTest extends TestCase
                 ),
                 $credsObject
             ],
+
+            // Secure data flow, with retries for ConnectException (Guzzle 7)
+            [
+                $this->getSecureTestClient(
+                    [
+                        'put' => [
+                            Promise\rejection_for([
+                                'exception' => $putThrottleException
+                            ]),
+                            Promise\promise_for(
+                                new Response(200, [], Psr7\stream_for('MOCK_TOKEN_VALUE'))
+                            )
+                        ],
+                        'get_profile' => [
+                            $rejectionThrottleProfile,
+                            $promiseProfile
+                        ],
+                        'get_creds' => [
+                            $rejectionThrottleCreds,
+                            $promiseCreds
+                        ],
+                    ],
+                    'MockProfile',
+                    $creds,
+                    true
+                ),
+                $credsObject
+            ],
+
+            // Insecure data flow, with retries for ConnectException (Guzzle 7)
+            [
+                $this->getInsecureTestClient(
+                    [
+                        'get_profile' => [
+                            $rejectionThrottleProfile,
+                            $promiseProfile
+                        ],
+                        'get_creds' => [
+                            $rejectionThrottleCreds,
+                            $promiseCreds
+                        ],
+                    ],
+                    'MockProfile',
+                    $creds,
+                    true
+                ),
+                $credsObject
+            ],
         ];
     }
 
@@ -455,8 +525,8 @@ class InstanceProfileProviderTest extends TestCase
             $provider()->wait();
             $this->fail('Provider should have thrown an exception.');
         } catch (\Exception $e) {
-            $this->assertEquals(get_class($expected), get_class($e));
-            $this->assertEquals($expected->getMessage(), $e->getMessage());
+            $this->assertInstanceOf(get_class($expected), $e);
+            $this->assertSame($expected->getMessage(), $e->getMessage());
         }
     }
 
@@ -529,6 +599,38 @@ class InstanceProfileProviderTest extends TestCase
                         'get_profile' => [$rejectionProfile]
                     ],
                     'MockProfile'
+                ),
+                new CredentialsException(
+                    'Error retrieving credentials from the instance profile '
+                    . 'metadata service. (401 Unathorized)'
+                )
+            ],
+
+            // Secure data flow, profile call, non-retryable error, ConnectException (Guzzle 7)
+            [
+                $this->getSecureTestClient(
+                    [
+                        'get_profile' => [$rejectionProfile]
+                    ],
+                    'MockProfile',
+                    ['foo_key', 'baz_secret', 'qux_token', null],
+                    true
+                ),
+                new CredentialsException(
+                    'Error retrieving credentials from the instance profile '
+                    . 'metadata service. (401 Unathorized)'
+                )
+            ],
+
+            // Insecure data flow, profile call, non-retryable error, ConnectException (Guzzle 7)
+            [
+                $this->getInsecureTestClient(
+                    [
+                        'get_profile' => [$rejectionProfile]
+                    ],
+                    'MockProfile',
+                    ['foo_key', 'baz_secret', 'qux_token', null],
+                    true
                 ),
                 new CredentialsException(
                     'Error retrieving credentials from the instance profile '
@@ -770,7 +872,7 @@ class InstanceProfileProviderTest extends TestCase
     {
         $response = new Response(200, [], Psr7\stream_for('test'));
         $client = function (RequestInterface $request) use ($response) {
-            $this->assertEquals(
+            $this->assertSame(
                 'aws-sdk-php/' . Sdk::VERSION . ' ' . \Aws\default_user_agent(),
                 $request->getHeader('User-Agent')[0]
             );
@@ -788,10 +890,10 @@ class InstanceProfileProviderTest extends TestCase
             ['foo', 'baz', null, "@{$t}"],
             'foo'
         )->wait();
-        $this->assertEquals('foo', $c->getAccessKeyId());
-        $this->assertEquals('baz', $c->getSecretKey());
+        $this->assertSame('foo', $c->getAccessKeyId());
+        $this->assertSame('baz', $c->getSecretKey());
         $this->assertNull($c->getSecurityToken());
-        $this->assertEquals($t, $c->getExpiration());
+        $this->assertSame($t, $c->getExpiration());
     }
 
     /**
@@ -857,9 +959,9 @@ class InstanceProfileProviderTest extends TestCase
         ];
         $provider = new InstanceProfileProvider($args);
         $c = $provider()->wait();
-        $this->assertEquals('foo', $c->getAccessKeyId());
-        $this->assertEquals('baz', $c->getSecretKey());
+        $this->assertSame('foo', $c->getAccessKeyId());
+        $this->assertSame('baz', $c->getSecretKey());
         $this->assertNull($c->getSecurityToken());
-        $this->assertEquals($t, $c->getExpiration());
+        $this->assertSame($t, $c->getExpiration());
     }
 }

@@ -2477,13 +2477,9 @@
     },
     "AnalyticsConfigurationType":{
       "type":"structure",
-      "required":[
-        "ApplicationId",
-        "RoleArn",
-        "ExternalId"
-      ],
       "members":{
         "ApplicationId":{"shape":"HexStringType"},
+        "ApplicationArn":{"shape":"ArnType"},
         "RoleArn":{"shape":"ArnType"},
         "ExternalId":{"shape":"StringType"},
         "UserDataShared":{"shape":"BooleanType"}
@@ -3059,6 +3055,36 @@
       "members":{
         "CertificateArn":{"shape":"ArnType"}
       }
+    },
+    "CustomEmailLambdaVersionConfigType":{
+      "type":"structure",
+      "required":[
+        "LambdaVersion",
+        "LambdaArn"
+      ],
+      "members":{
+        "LambdaVersion":{"shape":"CustomEmailSenderLambdaVersionType"},
+        "LambdaArn":{"shape":"ArnType"}
+      }
+    },
+    "CustomEmailSenderLambdaVersionType":{
+      "type":"string",
+      "enum":["V1_0"]
+    },
+    "CustomSMSLambdaVersionConfigType":{
+      "type":"structure",
+      "required":[
+        "LambdaVersion",
+        "LambdaArn"
+      ],
+      "members":{
+        "LambdaVersion":{"shape":"CustomSMSSenderLambdaVersionType"},
+        "LambdaArn":{"shape":"ArnType"}
+      }
+    },
+    "CustomSMSSenderLambdaVersionType":{
+      "type":"string",
+      "enum":["V1_0"]
     },
     "DateType":{"type":"timestamp"},
     "DefaultEmailOptionType":{
@@ -3906,7 +3932,10 @@
         "CreateAuthChallenge":{"shape":"ArnType"},
         "VerifyAuthChallengeResponse":{"shape":"ArnType"},
         "PreTokenGeneration":{"shape":"ArnType"},
-        "UserMigration":{"shape":"ArnType"}
+        "UserMigration":{"shape":"ArnType"},
+        "CustomSMSSender":{"shape":"CustomSMSLambdaVersionConfigType"},
+        "CustomEmailSender":{"shape":"CustomEmailLambdaVersionConfigType"},
+        "KMSKeyID":{"shape":"ArnType"}
       }
     },
     "LimitExceededException":{

@@ -209,6 +209,19 @@
         {"shape":"InternalServerError"}
       ]
     },
+    "CreateTapePool":{
+      "name":"CreateTapePool",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"CreateTapePoolInput"},
+      "output":{"shape":"CreateTapePoolOutput"},
+      "errors":[
+        {"shape":"InvalidGatewayRequestException"},
+        {"shape":"InternalServerError"}
+      ]
+    },
     "CreateTapeWithBarcode":{
       "name":"CreateTapeWithBarcode",
       "http":{
@@ -339,6 +352,19 @@
         {"shape":"InternalServerError"}
       ]
     },
+    "DeleteTapePool":{
+      "name":"DeleteTapePool",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"DeleteTapePoolInput"},
+      "output":{"shape":"DeleteTapePoolOutput"},
+      "errors":[
+        {"shape":"InvalidGatewayRequestException"},
+        {"shape":"InternalServerError"}
+      ]
+    },
     "DeleteVolume":{
       "name":"DeleteVolume",
       "http":{
@@ -373,6 +399,19 @@
       },
       "input":{"shape":"DescribeBandwidthRateLimitInput"},
       "output":{"shape":"DescribeBandwidthRateLimitOutput"},
+      "errors":[
+        {"shape":"InvalidGatewayRequestException"},
+        {"shape":"InternalServerError"}
+      ]
+    },
+    "DescribeBandwidthRateLimitSchedule":{
+      "name":"DescribeBandwidthRateLimitSchedule",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"DescribeBandwidthRateLimitScheduleInput"},
+      "output":{"shape":"DescribeBandwidthRateLimitScheduleOutput"},
       "errors":[
         {"shape":"InvalidGatewayRequestException"},
         {"shape":"InternalServerError"}
@@ -690,6 +729,19 @@
         {"shape":"InternalServerError"}
       ]
     },
+    "ListTapePools":{
+      "name":"ListTapePools",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"ListTapePoolsInput"},
+      "output":{"shape":"ListTapePoolsOutput"},
+      "errors":[
+        {"shape":"InvalidGatewayRequestException"},
+        {"shape":"InternalServerError"}
+      ]
+    },
     "ListTapes":{
       "name":"ListTapes",
       "http":{
@@ -911,6 +963,19 @@
         {"shape":"InternalServerError"}
       ]
     },
+    "UpdateBandwidthRateLimitSchedule":{
+      "name":"UpdateBandwidthRateLimitSchedule",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"UpdateBandwidthRateLimitScheduleInput"},
+      "output":{"shape":"UpdateBandwidthRateLimitScheduleOutput"},
+      "errors":[
+        {"shape":"InvalidGatewayRequestException"},
+        {"shape":"InternalServerError"}
+      ]
+    },
     "UpdateChapCredentials":{
       "name":"UpdateChapCredentials",
       "http":{
@@ -984,6 +1049,19 @@
       },
       "input":{"shape":"UpdateSMBFileShareInput"},
       "output":{"shape":"UpdateSMBFileShareOutput"},
+      "errors":[
+        {"shape":"InvalidGatewayRequestException"},
+        {"shape":"InternalServerError"}
+      ]
+    },
+    "UpdateSMBFileShareVisibility":{
+      "name":"UpdateSMBFileShareVisibility",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"UpdateSMBFileShareVisibilityInput"},
+      "output":{"shape":"UpdateSMBFileShareVisibilityOutput"},
       "errors":[
         {"shape":"InvalidGatewayRequestException"},
         {"shape":"InternalServerError"}
@@ -1148,7 +1226,8 @@
       ],
       "members":{
         "TapeARN":{"shape":"TapeARN"},
-        "PoolId":{"shape":"PoolId"}
+        "PoolId":{"shape":"PoolId"},
+        "BypassGovernanceRetention":{"shape":"boolean"}
       }
     },
     "AssignTapePoolOutput":{
@@ -1211,7 +1290,8 @@
         "TapeBarcodePrefix":{"shape":"TapeBarcodePrefix"},
         "PoolId":{"shape":"PoolId"},
         "TapeSizeInBytes":{"shape":"TapeSize"},
-        "MinimumNumTapes":{"shape":"MinimumNumTapes"}
+        "MinimumNumTapes":{"shape":"MinimumNumTapes"},
+        "Worm":{"shape":"boolean"}
       }
     },
     "AutomaticTapeCreationRules":{
@@ -1231,6 +1311,31 @@
     "BandwidthDownloadRateLimit":{
       "type":"long",
       "min":102400
+    },
+    "BandwidthRateLimitInterval":{
+      "type":"structure",
+      "required":[
+        "StartHourOfDay",
+        "StartMinuteOfHour",
+        "EndHourOfDay",
+        "EndMinuteOfHour",
+        "DaysOfWeek"
+      ],
+      "members":{
+        "StartHourOfDay":{"shape":"HourOfDay"},
+        "StartMinuteOfHour":{"shape":"MinuteOfHour"},
+        "EndHourOfDay":{"shape":"HourOfDay"},
+        "EndMinuteOfHour":{"shape":"MinuteOfHour"},
+        "DaysOfWeek":{"shape":"DaysOfWeek"},
+        "AverageUploadRateLimitInBitsPerSec":{"shape":"BandwidthUploadRateLimit"},
+        "AverageDownloadRateLimitInBitsPerSec":{"shape":"BandwidthDownloadRateLimit"}
+      }
+    },
+    "BandwidthRateLimitIntervals":{
+      "type":"list",
+      "member":{"shape":"BandwidthRateLimitInterval"},
+      "max":20,
+      "min":0
     },
     "BandwidthType":{
       "type":"string",
@@ -1394,7 +1499,8 @@
         "RequesterPays":{"shape":"Boolean"},
         "Tags":{"shape":"Tags"},
         "FileShareName":{"shape":"FileShareName"},
-        "CacheAttributes":{"shape":"CacheAttributes"}
+        "CacheAttributes":{"shape":"CacheAttributes"},
+        "NotificationPolicy":{"shape":"NotificationPolicy"}
       }
     },
     "CreateNFSFileShareOutput":{
@@ -1424,6 +1530,7 @@
         "GuessMIMETypeEnabled":{"shape":"Boolean"},
         "RequesterPays":{"shape":"Boolean"},
         "SMBACLEnabled":{"shape":"Boolean"},
+        "AccessBasedEnumeration":{"shape":"Boolean"},
         "AdminUserList":{"shape":"FileShareUserList"},
         "ValidUserList":{"shape":"FileShareUserList"},
         "InvalidUserList":{"shape":"FileShareUserList"},
@@ -1432,7 +1539,8 @@
         "CaseSensitivity":{"shape":"CaseSensitivity"},
         "Tags":{"shape":"Tags"},
         "FileShareName":{"shape":"FileShareName"},
-        "CacheAttributes":{"shape":"CacheAttributes"}
+        "CacheAttributes":{"shape":"CacheAttributes"},
+        "NotificationPolicy":{"shape":"NotificationPolicy"}
       }
     },
     "CreateSMBFileShareOutput":{
@@ -1509,6 +1617,26 @@
         "TargetARN":{"shape":"TargetARN"}
       }
     },
+    "CreateTapePoolInput":{
+      "type":"structure",
+      "required":[
+        "PoolName",
+        "StorageClass"
+      ],
+      "members":{
+        "PoolName":{"shape":"PoolName"},
+        "StorageClass":{"shape":"TapeStorageClass"},
+        "RetentionLockType":{"shape":"RetentionLockType"},
+        "RetentionLockTimeInDays":{"shape":"RetentionLockTimeInDays"},
+        "Tags":{"shape":"Tags"}
+      }
+    },
+    "CreateTapePoolOutput":{
+      "type":"structure",
+      "members":{
+        "PoolARN":{"shape":"PoolARN"}
+      }
+    },
     "CreateTapeWithBarcodeInput":{
       "type":"structure",
       "required":[
@@ -1523,6 +1651,7 @@
         "KMSEncrypted":{"shape":"Boolean"},
         "KMSKey":{"shape":"KMSKey"},
         "PoolId":{"shape":"PoolId"},
+        "Worm":{"shape":"boolean"},
         "Tags":{"shape":"Tags"}
       }
     },
@@ -1550,6 +1679,7 @@
         "KMSEncrypted":{"shape":"Boolean"},
         "KMSKey":{"shape":"KMSKey"},
         "PoolId":{"shape":"PoolId"},
+        "Worm":{"shape":"boolean"},
         "Tags":{"shape":"Tags"}
       }
     },
@@ -1569,6 +1699,12 @@
       "type":"integer",
       "max":6,
       "min":0
+    },
+    "DaysOfWeek":{
+      "type":"list",
+      "member":{"shape":"DayOfWeek"},
+      "max":7,
+      "min":1
     },
     "DeleteAutomaticTapeCreationPolicyInput":{
       "type":"structure",
@@ -1662,7 +1798,8 @@
       "type":"structure",
       "required":["TapeARN"],
       "members":{
-        "TapeARN":{"shape":"TapeARN"}
+        "TapeARN":{"shape":"TapeARN"},
+        "BypassGovernanceRetention":{"shape":"boolean"}
       }
     },
     "DeleteTapeArchiveOutput":{
@@ -1679,13 +1816,27 @@
       ],
       "members":{
         "GatewayARN":{"shape":"GatewayARN"},
-        "TapeARN":{"shape":"TapeARN"}
+        "TapeARN":{"shape":"TapeARN"},
+        "BypassGovernanceRetention":{"shape":"boolean"}
       }
     },
     "DeleteTapeOutput":{
       "type":"structure",
       "members":{
         "TapeARN":{"shape":"TapeARN"}
+      }
+    },
+    "DeleteTapePoolInput":{
+      "type":"structure",
+      "required":["PoolARN"],
+      "members":{
+        "PoolARN":{"shape":"PoolARN"}
+      }
+    },
+    "DeleteTapePoolOutput":{
+      "type":"structure",
+      "members":{
+        "PoolARN":{"shape":"PoolARN"}
       }
     },
     "DeleteVolumeInput":{
@@ -1734,6 +1885,20 @@
         "GatewayARN":{"shape":"GatewayARN"},
         "AverageUploadRateLimitInBitsPerSec":{"shape":"BandwidthUploadRateLimit"},
         "AverageDownloadRateLimitInBitsPerSec":{"shape":"BandwidthDownloadRateLimit"}
+      }
+    },
+    "DescribeBandwidthRateLimitScheduleInput":{
+      "type":"structure",
+      "required":["GatewayARN"],
+      "members":{
+        "GatewayARN":{"shape":"GatewayARN"}
+      }
+    },
+    "DescribeBandwidthRateLimitScheduleOutput":{
+      "type":"structure",
+      "members":{
+        "GatewayARN":{"shape":"GatewayARN"},
+        "BandwidthRateLimitIntervals":{"shape":"BandwidthRateLimitIntervals"}
       }
     },
     "DescribeCacheInput":{
@@ -1869,7 +2034,8 @@
         "DomainName":{"shape":"DomainName"},
         "ActiveDirectoryStatus":{"shape":"ActiveDirectoryStatus"},
         "SMBGuestPasswordSet":{"shape":"Boolean"},
-        "SMBSecurityStrategy":{"shape":"SMBSecurityStrategy"}
+        "SMBSecurityStrategy":{"shape":"SMBSecurityStrategy"},
+        "FileSharesVisible":{"shape":"Boolean"}
       }
     },
     "DescribeSnapshotScheduleInput":{
@@ -2484,6 +2650,21 @@
         "Tags":{"shape":"Tags"}
       }
     },
+    "ListTapePoolsInput":{
+      "type":"structure",
+      "members":{
+        "PoolARNs":{"shape":"PoolARNs"},
+        "Marker":{"shape":"Marker"},
+        "Limit":{"shape":"PositiveIntObject"}
+      }
+    },
+    "ListTapePoolsOutput":{
+      "type":"structure",
+      "members":{
+        "PoolInfos":{"shape":"PoolInfos"},
+        "Marker":{"shape":"Marker"}
+      }
+    },
     "ListTapesInput":{
       "type":"structure",
       "members":{
@@ -2605,7 +2786,8 @@
         "RequesterPays":{"shape":"Boolean"},
         "Tags":{"shape":"Tags"},
         "FileShareName":{"shape":"FileShareName"},
-        "CacheAttributes":{"shape":"CacheAttributes"}
+        "CacheAttributes":{"shape":"CacheAttributes"},
+        "NotificationPolicy":{"shape":"NotificationPolicy"}
       }
     },
     "NFSFileShareInfoList":{
@@ -2633,6 +2815,12 @@
       "type":"string",
       "max":2048,
       "min":1
+    },
+    "NotificationPolicy":{
+      "type":"string",
+      "max":100,
+      "min":2,
+      "pattern":"^\\{[\\w\\s:\\{\\}\\[\\]\"]*}$"
     },
     "NotifyWhenUploadedInput":{
       "type":"structure",
@@ -2682,10 +2870,47 @@
       "min":1,
       "pattern":"^[0-7]{4}$"
     },
+    "PoolARN":{
+      "type":"string",
+      "max":500,
+      "min":50
+    },
+    "PoolARNs":{
+      "type":"list",
+      "member":{"shape":"PoolARN"}
+    },
     "PoolId":{
       "type":"string",
       "max":100,
       "min":1
+    },
+    "PoolInfo":{
+      "type":"structure",
+      "members":{
+        "PoolARN":{"shape":"PoolARN"},
+        "PoolName":{"shape":"PoolName"},
+        "StorageClass":{"shape":"TapeStorageClass"},
+        "RetentionLockType":{"shape":"RetentionLockType"},
+        "RetentionLockTimeInDays":{"shape":"RetentionLockTimeInDays"},
+        "PoolStatus":{"shape":"PoolStatus"}
+      }
+    },
+    "PoolInfos":{
+      "type":"list",
+      "member":{"shape":"PoolInfo"}
+    },
+    "PoolName":{
+      "type":"string",
+      "max":100,
+      "min":1,
+      "pattern":"^[ -\\.0-\\[\\]-~]*[!-\\.0-\\[\\]-~][ -\\.0-\\[\\]-~]*$"
+    },
+    "PoolStatus":{
+      "type":"string",
+      "enum":[
+        "ACTIVE",
+        "DELETED"
+      ]
     },
     "PositiveIntObject":{
       "type":"integer",
@@ -2752,6 +2977,19 @@
       "max":500,
       "min":50
     },
+    "RetentionLockTimeInDays":{
+      "type":"integer",
+      "max":36500,
+      "min":0
+    },
+    "RetentionLockType":{
+      "type":"string",
+      "enum":[
+        "COMPLIANCE",
+        "GOVERNANCE",
+        "NONE"
+      ]
+    },
     "RetrieveTapeArchiveInput":{
       "type":"structure",
       "required":[
@@ -2810,6 +3048,7 @@
         "GuessMIMETypeEnabled":{"shape":"Boolean"},
         "RequesterPays":{"shape":"Boolean"},
         "SMBACLEnabled":{"shape":"Boolean"},
+        "AccessBasedEnumeration":{"shape":"Boolean"},
         "AdminUserList":{"shape":"FileShareUserList"},
         "ValidUserList":{"shape":"FileShareUserList"},
         "InvalidUserList":{"shape":"FileShareUserList"},
@@ -2818,7 +3057,8 @@
         "CaseSensitivity":{"shape":"CaseSensitivity"},
         "Tags":{"shape":"Tags"},
         "FileShareName":{"shape":"FileShareName"},
-        "CacheAttributes":{"shape":"CacheAttributes"}
+        "CacheAttributes":{"shape":"CacheAttributes"},
+        "NotificationPolicy":{"shape":"NotificationPolicy"}
       }
     },
     "SMBFileShareInfoList":{
@@ -3017,7 +3257,10 @@
         "Progress":{"shape":"DoubleObject"},
         "TapeUsedInBytes":{"shape":"TapeUsage"},
         "KMSKey":{"shape":"KMSKey"},
-        "PoolId":{"shape":"PoolId"}
+        "PoolId":{"shape":"PoolId"},
+        "Worm":{"shape":"boolean"},
+        "RetentionStartDate":{"shape":"Time"},
+        "PoolEntryDate":{"shape":"Time"}
       }
     },
     "TapeARN":{
@@ -3042,7 +3285,10 @@
         "TapeStatus":{"shape":"TapeArchiveStatus"},
         "TapeUsedInBytes":{"shape":"TapeUsage"},
         "KMSKey":{"shape":"KMSKey"},
-        "PoolId":{"shape":"PoolId"}
+        "PoolId":{"shape":"PoolId"},
+        "Worm":{"shape":"boolean"},
+        "RetentionStartDate":{"shape":"Time"},
+        "PoolEntryDate":{"shape":"Time"}
       }
     },
     "TapeArchiveStatus":{"type":"string"},
@@ -3075,7 +3321,9 @@
         "TapeSizeInBytes":{"shape":"TapeSize"},
         "TapeStatus":{"shape":"TapeStatus"},
         "GatewayARN":{"shape":"GatewayARN"},
-        "PoolId":{"shape":"PoolId"}
+        "PoolId":{"shape":"PoolId"},
+        "RetentionStartDate":{"shape":"Time"},
+        "PoolEntryDate":{"shape":"Time"}
       }
     },
     "TapeInfos":{
@@ -3098,6 +3346,13 @@
     "TapeRecoveryPointStatus":{"type":"string"},
     "TapeSize":{"type":"long"},
     "TapeStatus":{"type":"string"},
+    "TapeStorageClass":{
+      "type":"string",
+      "enum":[
+        "DEEP_ARCHIVE",
+        "GLACIER"
+      ]
+    },
     "TapeUsage":{"type":"long"},
     "Tapes":{
       "type":"list",
@@ -3147,6 +3402,23 @@
       }
     },
     "UpdateBandwidthRateLimitOutput":{
+      "type":"structure",
+      "members":{
+        "GatewayARN":{"shape":"GatewayARN"}
+      }
+    },
+    "UpdateBandwidthRateLimitScheduleInput":{
+      "type":"structure",
+      "required":[
+        "GatewayARN",
+        "BandwidthRateLimitIntervals"
+      ],
+      "members":{
+        "GatewayARN":{"shape":"GatewayARN"},
+        "BandwidthRateLimitIntervals":{"shape":"BandwidthRateLimitIntervals"}
+      }
+    },
+    "UpdateBandwidthRateLimitScheduleOutput":{
       "type":"structure",
       "members":{
         "GatewayARN":{"shape":"GatewayARN"}
@@ -3240,7 +3512,8 @@
         "GuessMIMETypeEnabled":{"shape":"Boolean"},
         "RequesterPays":{"shape":"Boolean"},
         "FileShareName":{"shape":"FileShareName"},
-        "CacheAttributes":{"shape":"CacheAttributes"}
+        "CacheAttributes":{"shape":"CacheAttributes"},
+        "NotificationPolicy":{"shape":"NotificationPolicy"}
       }
     },
     "UpdateNFSFileShareOutput":{
@@ -3262,19 +3535,38 @@
         "GuessMIMETypeEnabled":{"shape":"Boolean"},
         "RequesterPays":{"shape":"Boolean"},
         "SMBACLEnabled":{"shape":"Boolean"},
+        "AccessBasedEnumeration":{"shape":"Boolean"},
         "AdminUserList":{"shape":"FileShareUserList"},
         "ValidUserList":{"shape":"FileShareUserList"},
         "InvalidUserList":{"shape":"FileShareUserList"},
         "AuditDestinationARN":{"shape":"AuditDestinationARN"},
         "CaseSensitivity":{"shape":"CaseSensitivity"},
         "FileShareName":{"shape":"FileShareName"},
-        "CacheAttributes":{"shape":"CacheAttributes"}
+        "CacheAttributes":{"shape":"CacheAttributes"},
+        "NotificationPolicy":{"shape":"NotificationPolicy"}
       }
     },
     "UpdateSMBFileShareOutput":{
       "type":"structure",
       "members":{
         "FileShareARN":{"shape":"FileShareARN"}
+      }
+    },
+    "UpdateSMBFileShareVisibilityInput":{
+      "type":"structure",
+      "required":[
+        "GatewayARN",
+        "FileSharesVisible"
+      ],
+      "members":{
+        "GatewayARN":{"shape":"GatewayARN"},
+        "FileSharesVisible":{"shape":"Boolean"}
+      }
+    },
+    "UpdateSMBFileShareVisibilityOutput":{
+      "type":"structure",
+      "members":{
+        "GatewayARN":{"shape":"GatewayARN"}
       }
     },
     "UpdateSMBSecurityStrategyInput":{

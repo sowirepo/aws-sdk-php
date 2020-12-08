@@ -10,6 +10,7 @@ use Aws\Test\UsesServiceTrait;
 use GuzzleHttp\Promise;
 use Psr\Http\Message\RequestInterface;
 use PHPUnit\Framework\TestCase;
+use SplFileInfo;
 
 /**
  * @covers Aws\S3\Transfer
@@ -119,8 +120,8 @@ class TransferTest extends TestCase
 
         /** @var CommandInterface $test */
         foreach ($c as $test) {
-            $this->assertEquals('PutObject', $test->getName());
-            $this->assertEquals('foo', $test['Bucket']);
+            $this->assertSame('PutObject', $test->getName());
+            $this->assertSame('foo', $test['Bucket']);
             $this->assertStringStartsWith('bar/', $test['Key']);
             $this->assertContains($test['SourceFile'] . ' -> s3://foo/bar', $output);
         }
@@ -140,6 +141,40 @@ class TransferTest extends TestCase
         `rm -rf $dir`;
         mkdir($dir);
         $filename = $dir . '/large.txt';
+        $f = fopen($filename, 'w+');
+        $line = str_repeat('.', 1024);
+        for ($i = 0; $i < 6000; $i++) {
+            fwrite($f, $line);
+        }
+        fclose($f);
+
+        $res = fopen('php://temp', 'r+');
+        $t = new Transfer($s3, $dir, 's3://foo/bar', [
+            'mup_threshold' => 5248000,
+            'debug' => $res
+        ]);
+
+        $t->transfer();
+        rewind($res);
+        $output = stream_get_contents($res);
+        $this->assertContains("Transferring $filename -> s3://foo/bar/large.txt (UploadPart) : Part=1", $output);
+        `rm -rf $dir`;
+    }
+
+    public function testDoesMultipartForLargeFilesWithFileInfoAsSource()
+    {
+        $s3 = $this->getTestClient('s3');
+        $this->addMockResults($s3, [
+            new Result(['UploadId' => '123']),
+            new Result(['ETag' => 'a']),
+            new Result(['ETag' => 'b']),
+            new Result(['UploadId' => '123']),
+        ]);
+
+        $dir = sys_get_temp_dir() . '/unittest';
+        `rm -rf $dir`;
+        mkdir($dir);
+        $filename = new SplFileInfo($dir . '/large.txt');
         $f = fopen($filename, 'w+');
         $line = str_repeat('.', 1024);
         for ($i = 0; $i < 6000; $i++) {
@@ -223,7 +258,7 @@ class TransferTest extends TestCase
         $s3 = $this->getTestClient('s3');
         $s3->getHandlerList()->appendSign(Middleware::tap(
             function (CommandInterface $cmd, RequestInterface $req) {
-                $this->assertEquals(
+                $this->assertSame(
                     'myaccess-123456789012.s3-accesspoint.us-east-1.amazonaws.com',
                     $req->getUri()->getHost()
                 );
